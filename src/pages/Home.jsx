@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { getIcon } from '../utils/iconUtils';
 import DealsModule from '../components/deals/DealsModule';
+import ActivitiesModule from '../components/activities/ActivitiesModule';
 import MainFeature from '../components/MainFeature';
 
 const Home = ({ darkMode, currentUser }) => {
@@ -88,6 +89,8 @@ const Home = ({ darkMode, currentUser }) => {
           <MainFeature darkMode={darkMode} currentUser={currentUser} />
         ) : activeTab === 'deals' ? (
           <DealsModule darkMode={darkMode} currentUser={currentUser} />
+        ) : activeTab === 'activities' ? (
+          <ActivitiesModule darkMode={darkMode} currentUser={currentUser} />
         ) : (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
