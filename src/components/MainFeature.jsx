@@ -590,8 +590,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
                               <ClockIcon className="w-5 h-5 text-surface-400" />
                               <span>{selectedContact.lastContact}</span>
                             </div>
-                          </div>
-                          
+                          </div>                          
                           {selectedContact.tags && selectedContact.tags.length > 0 && (
                             <div>
                               <h4 className="text-sm font-medium text-surface-500 mb-2">Tags</h4>
@@ -686,25 +685,19 @@ const MainFeature = ({ darkMode, currentUser }) => {
                               // In a real app, this would handle the document download
                               toast.info(`Downloading ${doc.filename}`);
                             }}
+                            onView={(doc) => setViewingDocument(doc)}
                             contactId={selectedContact.id}
                           />
-                          onView={(doc) => setViewingDocument(doc)}
-                          />
-
-                    <FileTextIcon className="w-8 h-8 text-surface-400" />
-                  <h3 className="text-lg font-medium mb-2">No documents found</h3>
-                    )}
-                    
-                    {/* Notes Section */}
-                    <NotesSection 
-                      contact={selectedContact} 
-                      onAddNote={handleAddNote}
-                      onUpdateContact={(updatedContact) => {
-                        setSelectedContact(updatedContact);
-                        setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
-                      }}
-                      currentUser={currentUser || 'Current User'}
-                    />
+                          
+                          {(!selectedContact.documents || selectedContact.documents.length === 0) && (
+                            <div className="flex flex-col items-center justify-center py-10 text-center">
+                              <FileTextIcon className="w-8 h-8 text-surface-400" />
+                              <h3 className="text-lg font-medium mb-2">No documents found</h3>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ) : (
