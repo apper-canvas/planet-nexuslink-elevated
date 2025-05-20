@@ -137,7 +137,8 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
         <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
           {(() => { 
             const FileIcon = getIcon('file'); 
-            return <FileIcon className="w-8 h-8 text-surface-400" />; })()}
+            return <FileIcon className="w-8 h-8 text-surface-400" />; 
+          })()}
         </div>
         <h3 className="text-lg font-medium mb-2">No documents found</h3>
         <p className="text-center max-w-md mb-6">
@@ -168,7 +169,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
               ))}
             </select>
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              {getIcon('chevron-down')({className: "w-4 h-4 text-surface-500"})}
+              {React.createElement(getIcon('chevron-down'), { className: "w-4 h-4 text-surface-500" })}
             </div>
           </div>
           
@@ -230,7 +231,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
       {viewMode === 'grid' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDocs.map((doc) => {
-            const FileIcon = getIcon(getFileTypeIcon(doc.filename));
+            const FileIconComponent = getIcon(getFileTypeIcon(doc.filename));
             const typeColor = getDocumentTypeColor(doc.filename);
             
             return (
@@ -241,7 +242,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                 className="document-card group relative"
               >
                 <div className="document-preview relative" onClick={() => handleView(doc)}>
-                  <FileIcon className="w-12 h-12 text-surface-400" />
+                  <FileIconComponent className="w-12 h-12 text-surface-400" />
                   {doc.version > 1 && (
                     <span className="document-version-badge absolute top-2 right-2">v{doc.version}</span>
                   )}
@@ -326,7 +327,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
             </thead>
             <tbody>
               {filteredDocs.map((doc) => {
-                const FileIcon = getIcon(getFileTypeIcon(doc.filename));
+                const FileIconComponent = getIcon(getFileTypeIcon(doc.filename));
                 const typeColor = getDocumentTypeColor(doc.filename);
                 
                 return (
@@ -334,7 +335,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                     <td className="px-4 py-3">{getDocumentCategoryLabel(doc.type)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <FileIcon className="w-8 h-8 text-surface-400 flex-shrink-0" />
+                        <FileIconComponent className="w-8 h-8 text-surface-400 flex-shrink-0" />
                         <div>
                           <div className="flex items-center">
                             <span className="font-medium">{doc.filename}</span>
