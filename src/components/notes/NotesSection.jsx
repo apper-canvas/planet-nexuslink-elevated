@@ -220,3 +220,5 @@ const NotesSection = ({ contact, onAddNote, onUpdateContact, currentUser }) => {
     </div>
   );
 };
+
+export default NotesSection;
