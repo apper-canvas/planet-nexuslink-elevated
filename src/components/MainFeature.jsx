@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 import NotesSection from './notes/NotesSection';
+import DocumentList from './documents/DocumentList';
+import DocumentUploader from './documents/DocumentUploader';
+import DocumentViewer from './documents/DocumentViewer';
 
 // Sample initial data for the CRM
 const initialContacts = [
@@ -26,7 +29,19 @@ const initialContacts = [
       }
     ],
     activities: [],
-    teamMembers: ["Current User", "David Lee", "Maria Rodriguez"]
+    teamMembers: ["Current User", "David Lee", "Maria Rodriguez"],
+    documents: [
+      {
+        id: "doc1",
+        filename: "Q3_Marketing_Proposal.pdf",
+        size: 2456621,
+        uploadedBy: "Current User",
+        uploadedAt: "2023-06-10T14:22:00",
+        version: 2,
+        type: "proposal",
+        description: "Marketing campaign proposal for Q3"
+      }
+    ]
   },
   {
     id: "2",
@@ -39,7 +54,8 @@ const initialContacts = [
     status: "new",
     lastContact: "2023-07-28",
     notes: [],
-    teamMembers: ["Current User", "David Lee"]
+    teamMembers: ["Current User", "David Lee"],
+    documents: []
   },
   {
     id: "3", 
@@ -52,7 +68,8 @@ const initialContacts = [
     status: "inactive",
     lastContact: "2023-05-10",
     notes: [],
-    teamMembers: ["Current User", "Maria Rodriguez", "John Smith"]
+    teamMembers: ["Current User", "Maria Rodriguez", "John Smith"],
+    documents: []
   }
 ];
 
@@ -67,6 +84,9 @@ const MainFeature = ({ darkMode, currentUser }) => {
   const [filterTag, setFilterTag] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
+  const [viewingDocument, setViewingDocument] = useState(null);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [formMode, setFormMode] = useState('add'); // 'add' or 'edit'
   const [formData, setFormData] = useState({
     name: '',
@@ -101,6 +121,8 @@ const MainFeature = ({ darkMode, currentUser }) => {
   const ChevronDownIcon = getIcon('chevron-down');
   const PlusIcon = getIcon('plus');
   
+  const FileTextIcon = getIcon('file-text');
+  const UploadIcon = getIcon('upload');
   // Save contacts to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('crm-contacts', JSON.stringify(contacts));
@@ -174,7 +196,8 @@ const MainFeature = ({ darkMode, currentUser }) => {
         ...formData,
         id: Date.now().toString(),
         lastContact: currentDate,
-        notes: []
+        notes: [],
+        documents: []
       };
       
       setContacts(prev => [...prev, newContact]);
@@ -230,6 +253,49 @@ const MainFeature = ({ darkMode, currentUser }) => {
         lastContact: new Date().toISOString().split('T')[0]
       }));
     }
+  };
+
+  const handleAddDocument = (document) => {
+    if (!selectedContact) return;
+
+    // Update the selected contact with the new document
+    const updatedContact = {
+      ...selectedContact,
+      documents: [document, ...(selectedContact.documents || [])]
+    };
+
+    // Update the contacts list
+    setContacts(prev =>
+      prev.map(contact =>
+        contact.id === selectedContact.id ? updatedContact : contact
+      )
+    );
+
+    // Update the selected contact in the UI
+    setSelectedContact(updatedContact);
+    setIsUploadingDocument(false);
+  };
+
+  const handleDeleteDocument = (documentId) => {
+    if (!selectedContact) return;
+
+    // Filter out the deleted document
+    const updatedDocuments = selectedContact.documents.filter(doc => doc.id !== documentId);
+    
+    // Update the selected contact
+    const updatedContact = {
+      ...selectedContact,
+      documents: updatedDocuments
+    };
+
+    // Update the contacts list
+    setContacts(prev =>
+      prev.map(contact =>
+        contact.id === selectedContact.id ? updatedContact : contact
+      )
+    );
+
+    setSelectedContact(updatedContact);
   };
   
   const handleAddTag = () => {
@@ -424,6 +490,216 @@ const MainFeature = ({ darkMode, currentUser }) => {
                   exit={{ opacity: 0 }}
                   className="h-full flex flex-col"
                 >
+                  {/* Contact header with tabs */}
+                  <div className="flex flex-col mb-6">
+                    <div className="flex justify-between items-start">
+                      <h2 className="text-xl font-bold">Contact Details</h2>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleEditContact}
+                          className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
+                          aria-label="Edit contact"
+                        >
+                          <EditIcon className="w-5 h-5 text-primary" />
+                        </button>
+                        <button
+                          onClick={handleDeleteContact}
+                          className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          aria-label="Delete contact"
+                        >
+                          <TrashIcon className="w-5 h-5 text-red-500" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact information area */}
+                  <div className="flex flex-col h-full">
+                    {/* Contact profile */}
+                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-surface-200 dark:border-surface-700">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
+                        {selectedContact.name.split(' ').map(name => name[0]).join('')}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium">{selectedContact.name}</h3>
+                        <p className="text-surface-600 dark:text-surface-400">{selectedContact.position}</p>
+                      </div>
+                    </div>
+
+                    {/* Navigation tabs */}
+                    <div className="border-b border-surface-200 dark:border-surface-700 mb-6">
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={() => setActiveTab('details')}
+                          className={`px-4 py-2 border-b-2 font-medium transition-colors ${
+                            activeTab === 'details'
+                              ? 'border-primary text-primary'
+                              : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+                          }`}
+                        >
+                          Details
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('documents')}
+                          className={`px-4 py-2 border-b-2 font-medium transition-colors flex items-center gap-1 ${
+                            activeTab === 'documents'
+                              ? 'border-primary text-primary'
+                              : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+                          }`}
+                        >
+                          Documents
+                          {selectedContact.documents?.length > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                              {selectedContact.documents.length}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Content area based on active tab */}
+                    <div className="flex-grow overflow-y-auto pb-4">
+                      {/* Details Tab */}
+                      {activeTab === 'details' && (
+                        <div className="space-y-6">
+                          <div>
+                            <h4 className="text-sm font-medium text-surface-500 mb-2">Contact Information</h4>
+                            <ul className="space-y-3">
+                              <li className="flex items-center gap-3">
+                                <BuildingIcon className="w-5 h-5 text-surface-400" />
+                                <span>{selectedContact.company}</span>
+                              </li>
+                              <li className="flex items-center gap-3">
+                                <BriefcaseIcon className="w-5 h-5 text-surface-400" />
+                                <span>{selectedContact.position}</span>
+                              </li>
+                              <li className="flex items-center gap-3">
+                                <MailIcon className="w-5 h-5 text-surface-400" />
+                                <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline">
+                                  {selectedContact.email}
+                                </a>
+                              </li>
+                              <li className="flex items-center gap-3">
+                                <PhoneIcon className="w-5 h-5 text-surface-400" />
+                                <a href={`tel:${selectedContact.phone}`} className="text-primary hover:underline">
+                                  {selectedContact.phone}
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-medium text-surface-500 mb-2">Status</h4>
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(selectedContact.status)}
+                              <span className="capitalize">{selectedContact.status}</span>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-medium text-surface-500 mb-2">Last Contact</h4>
+                            <div className="flex items-center gap-2">
+                              <ClockIcon className="w-5 h-5 text-surface-400" />
+                              <span>{selectedContact.lastContact}</span>
+                            </div>
+                          </div>
+                          
+                          {selectedContact.tags && selectedContact.tags.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium text-surface-500 mb-2">Tags</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedContact.tags.map(tag => (
+                                  <span 
+                                    key={tag} 
+                                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Notes Section */}
+                          <NotesSection 
+                            contact={selectedContact} 
+                            onAddNote={handleAddNote}
+                            onUpdateContact={(updatedContact) => {
+                              setSelectedContact(updatedContact);
+                              setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+                            }}
+                            currentUser={currentUser || 'Current User'}
+                          />
+                        </div>
+                      )}
+
+                      {/* Documents Tab */}
+                      {activeTab === 'documents' && (
+                        <div>
+                          <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-sm font-medium text-surface-500">Document Library</h4>
+                            {isUploadingDocument ? (
+                              <button
+                                onClick={() => setIsUploadingDocument(false)}
+                                className="btn-secondary flex items-center gap-1 py-1.5 text-sm"
+                              >
+                                <XIcon className="w-4 h-4" />
+                                <span>Cancel</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setIsUploadingDocument(true)}
+                                className="btn-primary flex items-center gap-1 py-1.5 text-sm"
+                              >
+                                <UploadIcon className="w-4 h-4" />
+                                <span>Upload Document</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Document Uploader */}
+                          {isUploadingDocument && (
+                            <div className="mb-6 animate-upload">
+                              <DocumentUploader 
+                                onUpload={handleAddDocument}
+                                contactId={selectedContact.id}
+                                currentUser={currentUser || 'Current User'}
+                              />
+                            </div>
+                          )}
+
+                          {/* Document List */}
+                          <DocumentList 
+                            documents={selectedContact.documents || []}
+                            onView={(doc) => setViewingDocument(doc)}
+                            onDelete={handleDeleteDocument}
+                            onDownload={(doc) => {
+                              // In a real app, this would handle the document download
+                              toast.info(`Downloading ${doc.filename}`);
+                            }}
+                            contactId={selectedContact.id}
+                          />
+
+                          {/* Document Viewer Modal */}
+                          <AnimatePresence>
+                            {viewingDocument && (
+                              <DocumentViewer 
+                                document={viewingDocument}
+                                onClose={() => setViewingDocument(null)}
+                              />
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="no-selection"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   <div className="flex justify-between items-start mb-6">
                     <h2 className="text-xl font-bold">Contact Details</h2>
                     <div className="flex space-x-2">

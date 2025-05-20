@@ -1,3 +1,4 @@
+import { saveAs } from 'file-saver';
 /**
  * Exports data to a CSV file and triggers download
  * @param {Array} data - Array of objects to export
@@ -54,4 +55,83 @@ const formatCsvValue = (value) => {
   }
   
   return stringValue;
+};
+
+/**
+ * Get file extension from filename
+ * @param {string} filename - Filename to extract extension from
+ * @returns {string} File extension in lowercase
+ */
+export const getFileExtension = (filename) => {
+  return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
+};
+
+/**
+ * Get file type icon based on extension
+ * @param {string} filename - Filename to determine icon for
+ * @returns {string} Icon name to use with getIcon utility
+ */
+export const getFileTypeIcon = (filename) => {
+  const ext = getFileExtension(filename);
+  
+  switch (ext) {
+    case 'pdf':
+      return 'file-text';
+    case 'doc':
+    case 'docx':
+      return 'file-text';
+    case 'xls':
+    case 'xlsx':
+      return 'file-spreadsheet';
+    case 'ppt':
+    case 'pptx':
+      return 'file-presentation';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'svg':
+      return 'image';
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+      return 'video';
+    default:
+      return 'file';
+  }
+};
+
+/**
+ * Get file type label based on extension
+ * @param {string} filename - Filename to determine type for
+ * @returns {string} Human readable file type
+ */
+export const getFileTypeLabel = (filename) => {
+  const ext = getFileExtension(filename);
+  
+  switch (ext) {
+    case 'pdf':
+      return 'PDF';
+    case 'doc':
+    case 'docx':
+      return 'Word';
+    case 'xls':
+    case 'xlsx':
+      return 'Excel';
+    case 'ppt':
+    case 'pptx':
+      return 'PowerPoint';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'svg':
+      return 'Image';
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+      return 'Video';
+    default:
+      return ext.toUpperCase();
+  }
 };
