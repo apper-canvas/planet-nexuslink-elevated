@@ -1,18 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getIcon } from './utils/iconUtils';
 import Home from './pages/Home';
 import Dashboard from './components/dashboard/Dashboard';
 import NotFound from './pages/NotFound';
+import { searchDocuments, formatSearchResults } from './utils/searchUtils';
 
 const DEFAULT_USER = 'Current User';
 
 function App() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   
   useEffect(() => {
     // Check for user preference
@@ -93,10 +101,83 @@ function App() {
     };
   }, []);
 
+  // Handle document search
+  const handleSearch = useCallback((query) => {
+    if (!query || query.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    // Simulate search delay
+    setTimeout(() => {
+      const results = searchDocuments(query);
+      const formattedResults = formatSearchResults(results);
+      setSearchResults(formattedResults);
+      setIsSearching(false);
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    handleSearch(searchQuery);
+  }, [searchQuery, handleSearch]);
+
+  // Close search when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearch(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Add keyboard shortcut for search (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+      } else if (e.key === 'Escape') {
+        setShowSearch(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleViewDocument = (doc) => {
+    // Navigate to the contact's document tab
+    navigate(`/?contact=${doc.contactId}&tab=documents`);
+    setShowSearch(false);
+    
+    // Show notification
+    toast.info(`Navigating to document: ${doc.filename}`);
+  };
+
+  const handleDownloadDocument = (doc) => {
+    toast.info(`Downloading ${doc.filename}`);
+    setShowSearch(false);
+  };
+
   const MoonIcon = getIcon('moon');
   const SunIcon = getIcon('sun');
   const BellIcon = getIcon('bell');
   const TrashIcon = getIcon('trash');
+  const SearchIcon = getIcon('search');
+  const FileIcon = getIcon('file-text');
+  const DownloadIcon = getIcon('download');
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -109,7 +190,95 @@ function App() {
             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Beta</span>
           </div>
           
+          {/* Global Search Bar */}
+          <div className="hidden md:block relative flex-1 max-w-xl mx-12" ref={searchRef}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search documents... (Ctrl+K)"
+                className="w-full py-1.5 pl-9 pr-4 rounded-lg bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSearch(true)}
+                ref={searchInputRef}
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400">
+                <SearchIcon className="w-4 h-4" />
+              </div>
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {showSearch && (
+              <div className="absolute mt-2 w-full bg-white dark:bg-surface-800 shadow-lg rounded-lg border border-surface-200 dark:border-surface-700 z-50">
+                <div className="p-3 border-b border-surface-200 dark:border-surface-700">
+                  <h3 className="font-medium text-sm">Search Results</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {isSearching ? (
+                    <div className="p-6 text-center text-surface-500">
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                      Searching...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div>
+                      {searchResults.map((result) => {
+                        const ResultIcon = getIcon(result.icon);
+                        return (
+                          <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 flex items-center justify-center">
+                                <ResultIcon className="w-5 h-5 text-surface-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{result.filename}</div>
+                                <div className="text-xs text-surface-500 flex items-center gap-2">
+                                  <span>{result.category}</span>
+                                  <span>•</span>
+                                  <span>{result.formattedSize}</span>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <button onClick={() => handleViewDocument(result)} className="p-1.5 rounded hover:bg-surface-200 dark:hover:bg-surface-600" title="View document">
+                                  <FileIcon className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDownloadDocument(result)} className="p-1.5 rounded hover:bg-surface-200 dark:hover:bg-surface-600" title="Download document">
+                                  <DownloadIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : searchQuery.length > 0 ? (
+                    <div className="p-6 text-center text-surface-500">
+                      No documents found matching "{searchQuery}"
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-surface-500">
+                      Type to search for documents
+                    </div>
+                  )}
+                </div>
+                {searchResults.length > 0 && (
+                  <div className="p-2 text-xs text-surface-500 text-center border-t border-surface-200 dark:border-surface-700">
+                    Press Enter to view all {searchResults.length} results
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
           <div className="flex items-center gap-2">
+            {/* Mobile Search Button */}
+            <button
+              className="md:hidden p-2 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+              onClick={() => setShowSearch(!showSearch)}
+              aria-label="Search"
+            >
+              <SearchIcon className="w-5 h-5" />
+            </button>
+            
             <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}

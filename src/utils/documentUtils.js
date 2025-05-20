@@ -84,3 +84,35 @@ export const generateThumbnailUrl = (filename) => {
   // In a real app, this would generate/fetch actual thumbnails
   return '';
 };
+
+/**
+ * Get document relevance score based on search term match
+ * @param {Object} doc - Document object
+ * @param {string} searchTerm - Search term
+ * @returns {number} Relevance score (0-100)
+ */
+export const getDocumentRelevanceScore = (doc, searchTerm) => {
+  if (!searchTerm || !doc) return 0;
+  
+  let score = 0;
+  const term = searchTerm.toLowerCase();
+  
+  // Exact filename match is highest relevance
+  if (doc.filename.toLowerCase() === term) {
+    score += 100;
+  } else if (doc.filename.toLowerCase().includes(term)) {
+    score += 70;
+  }
+  
+  // Description match
+  if (doc.description && doc.description.toLowerCase().includes(term)) {
+    score += 50;
+  }
+  
+  // Category match
+  if (doc.type && doc.type.toLowerCase().includes(term)) {
+    score += 30;
+  }
+  
+  return Math.min(100, score);
+};

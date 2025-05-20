@@ -98,6 +98,59 @@ class DocumentStorage {
     }
     return false;
   }
+
+  /**
+   * Search documents based on query
+   * @param {string} query - Search query
+   * @param {Object} options - Search options
+   * @returns {Array} Matching documents
+   */
+  searchDocuments(query, options = {}) {
+    try {
+      if (!query || query.trim() === '') {
+        return [];
+      }
+
+      const term = query.toLowerCase();
+      let results = this.documents.filter(doc => 
+        doc.filename.toLowerCase().includes(term) ||
+        (doc.description && doc.description.toLowerCase().includes(term)) ||
+        (doc.type && doc.type.toLowerCase().includes(term))
+      );
+
+      // Apply contactId filter if provided
+      if (options.contactId) {
+        results = results.filter(doc => doc.contactId === options.contactId);
+      }
+
+      // Add result metadata
+      return results.map(doc => ({
+        ...doc,
+        resultType: 'document',
+        matchField: this.getMatchField(doc, term)
+      }));
+    } catch (error) {
+      console.error('Error searching documents:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Determine which field matched the search query
+   * @param {Object} doc - Document object
+   * @param {string} term - Search term
+   * @returns {string} Matched field name
+   */
+  getMatchField(doc, term) {
+    if (doc.filename.toLowerCase().includes(term)) {
+      return 'filename';
+    } else if (doc.description && doc.description.toLowerCase().includes(term)) {
+      return 'description';
+    } else if (doc.type && doc.type.toLowerCase().includes(term)) {
+      return 'type';
+    }
+    return 'other';
+  }
 }
 
 export default new DocumentStorage();
