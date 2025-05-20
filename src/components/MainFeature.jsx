@@ -340,12 +340,11 @@ const MainFeature = ({ darkMode, currentUser }) => {
           <div className="card h-full flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Contacts</h2>
-              <button 
-                onClick={handleAddContact}
-                className="btn-primary flex items-center gap-2 py-1.5"
-              >
-                <UserPlusIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Contact</span>
+              <button onClick={handleAddContact} className="btn-primary">
+                <div className="flex items-center gap-2">
+                  <UserPlusIcon className="w-4 h-4" />
+                  <span>Add Contact</span>
+                </div>
               </button>
             </div>
             
