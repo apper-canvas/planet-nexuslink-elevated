@@ -3,14 +3,15 @@ import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-toastify';
 import { getIcon } from '../../utils/iconUtils';
 import { validateDocument, getDocumentCategories, formatFileSize } from '../../utils/documentUtils';
-import DocumentStorage from '../../services/DocumentStorage';
+import { getDocumentCategories, formatFileSize } from '../../utils/documentUtils';
 
 const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
-  const [isUploading, setIsUploading] = useState(false);
+const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect = false, contacts = [] }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [documentCategory, setDocumentCategory] = useState('general');
   const [description, setDescription] = useState('');
 
+  const [selectedContactId, setSelectedContactId] = useState(contactId || '');
   // Icons
   const UploadIcon = getIcon('upload');
   const FileIcon = getIcon('file');
@@ -42,12 +43,21 @@ const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
       description: description,
       uploadedBy: currentUser,
       uploadedAt: new Date().toISOString(),
+    const docContactId = showContactSelect ? selectedContactId : contactId;
+    
+    // Validate required fields
+    if (!docContactId) {
+      alert('Please select a contact');
+      setIsUploading(false);
+      return;
+    }
+    
       contactId: contactId,
       // In a real app, this would be the actual file URL from the server
       url: URL.createObjectURL(file)
     };
     
-    // Simulate upload with progress
+      contactId: docContactId,
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
@@ -73,6 +83,7 @@ const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
         setIsUploading(false);
         setUploadProgress(0);
         setDocumentCategory('general');
+          data-testid="dropzone"
         setDescription('');
         
         toast.success(`Document "${file.name}" uploaded successfully`);
@@ -86,6 +97,26 @@ const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     disabled: isUploading,
+          
+          {showContactSelect && (
+            <div>
+              <label htmlFor="contact" className="block text-sm font-medium mb-1">
+                Select Contact *
+              </label>
+              <select
+                id="contact"
+                value={selectedContactId}
+                onChange={(e) => setSelectedContactId(e.target.value)}
+                className="input-field"
+                required
+              >
+                <option value="">Select a contact</option>
+                {contacts.map(contact => (
+                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
     maxFiles: 1,
     // In a real app, you might want to limit file types based on what your backend supports
     accept: {

@@ -8,6 +8,7 @@ import ActivitiesModule from '../components/activities/ActivitiesModule';
 import EmailModule from '../components/email/EmailModule';
 import ReportsModule from '../components/reports/ReportsModule';
 import SettingsModule from '../components/settings/SettingsModule';
+import DocumentsModule from '../components/documents/DocumentsModule';
 import MainFeature from '../components/MainFeature';
 
 const Home = ({ darkMode, currentUser }) => {
@@ -20,6 +21,7 @@ const Home = ({ darkMode, currentUser }) => {
   const CalendarIcon = getIcon('calendar');
   const MailIcon = getIcon('mail');
   const BarChartIcon = getIcon('bar-chart-2');
+  const FileIcon = getIcon('file-text');
   const SettingsIcon = getIcon('settings'); 
   
   const navigationItems = [
@@ -28,6 +30,7 @@ const Home = ({ darkMode, currentUser }) => {
     { id: 'deals', label: 'Deals', icon: DollarSignIcon },
     { id: 'activities', label: 'Activities', icon: CalendarIcon },
     { id: 'email', label: 'Email', icon: MailIcon },
+    { id: 'documents', label: 'Documents', icon: FileIcon },
     { id: 'reports', label: 'Reports', icon: BarChartIcon },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
@@ -100,6 +103,8 @@ const Home = ({ darkMode, currentUser }) => {
           <ReportsModule darkMode={darkMode} currentUser={currentUser} />
         ) : activeTab === 'settings' ? (
           <SettingsModule darkMode={darkMode} currentUser={currentUser} />
+        ) : activeTab === 'documents' ? (
+          <DocumentsModule darkMode={darkMode} currentUser={currentUser} />
         ) : (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
