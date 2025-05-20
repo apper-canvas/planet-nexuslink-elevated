@@ -9,13 +9,13 @@ const Home = ({ darkMode, currentUser }) => {
   const [activeTab, setActiveTab] = useState('contacts');
   const navigate = useNavigate();
   // Icons
-  const DashboardIcon = getIcon('layout-dashboard');
-const Home = ({ darkMode, currentUser }) => {
+  const DashboardIcon = getIcon('layout-dashboard'); 
+  const UsersIcon = getIcon('users');
   const DollarSignIcon = getIcon('dollar-sign');
   const CalendarIcon = getIcon('calendar');
   const MailIcon = getIcon('mail');
   const BarChartIcon = getIcon('bar-chart-2');
-  const SettingsIcon = getIcon('settings');
+  const SettingsIcon = getIcon('settings'); 
   
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
@@ -119,4 +119,3 @@ const Home = ({ darkMode, currentUser }) => {
 };
 
 export default Home;
-                currentUser={currentUser}
