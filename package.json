@@ -22,6 +22,7 @@
     "react-mentions": "^4.4.10",
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.15.0",
+    "recharts": "^2.12.0",
     "react-toastify": "^11.0.5",
     "react-pdf": "^7.5.1",
     "file-saver": "^2.0.5",

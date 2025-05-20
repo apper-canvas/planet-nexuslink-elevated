@@ -220,3 +220,52 @@ body {
   .email-attachment {
     @apply flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-sm;
   }
+
+  /* Report styles */
+  .report-container {
+    @apply bg-white dark:bg-surface-800 rounded-xl shadow-card border border-surface-200 dark:border-surface-700 overflow-hidden;
+  }
+
+  .report-header {
+    @apply flex flex-wrap justify-between items-center gap-4 p-4 border-b border-surface-200 dark:border-surface-700;
+  }
+
+  .report-body {
+    @apply p-4;
+  }
+
+  .report-card {
+    @apply bg-white dark:bg-surface-800 rounded-lg shadow-sm p-4 border border-surface-200 dark:border-surface-700 h-full;
+  }
+
+  .report-nav-item {
+    @apply px-4 py-2 font-medium rounded-lg transition-colors;
+  }
+
+  .report-nav-item-active {
+    @apply bg-primary/10 text-primary dark:bg-primary/20;
+  }
+
+  .report-nav-item-inactive {
+    @apply hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-300;
+  }
+
+  .report-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .report-table {
+    @apply w-full border-collapse;
+  }
+
+  .report-table th {
+    @apply px-4 py-3 bg-surface-100 dark:bg-surface-700 text-left text-sm font-medium text-surface-700 dark:text-surface-300 border-b border-surface-200 dark:border-surface-600;
+  }
+
+  .report-table td {
+    @apply px-4 py-3 border-b border-surface-200 dark:border-surface-700 text-sm;
+  }
+
+  .report-table tr:hover {
+    @apply bg-surface-50 dark:bg-surface-800;
+  }
