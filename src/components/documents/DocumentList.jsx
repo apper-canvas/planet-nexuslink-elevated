@@ -135,7 +135,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
     return (
       <div className="flex flex-col items-center justify-center py-10 text-surface-500">
         <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
-          <FileIcon className="w-8 h-8 text-surface-400" />
+          {getIcon('file').({className: "w-8 h-8 text-surface-400"})}
         </div>
         <h3 className="text-lg font-medium mb-2">No documents found</h3>
         <p className="text-center max-w-md mb-6">
@@ -166,7 +166,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
               ))}
             </select>
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <getIcon('chevron-down') className="w-4 h-4 text-surface-500" />
+              {getIcon('chevron-down')({className: "w-4 h-4 text-surface-500"})}
             </div>
           </div>
           
@@ -329,9 +329,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                 
                 return (
                   <tr key={doc.id} className="border-t border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800">
-                    <td className="px-4 py-3">
-                      {getDocumentCategoryLabel(doc.type)}
-                  <tr key={doc.id} className="border-t border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800">
+                    <td className="px-4 py-3">{getDocumentCategoryLabel(doc.type)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <FileIcon className="w-8 h-8 text-surface-400 flex-shrink-0" />

@@ -125,7 +125,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
   
   const FileTextIcon = getIcon('file-text');
   const UploadIcon = getIcon('upload');
-  const SearchIcon = getIcon('search');
+  
   // Save contacts to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('crm-contacts', JSON.stringify(contacts));
@@ -689,116 +689,10 @@ const MainFeature = ({ darkMode, currentUser }) => {
                             contactId={selectedContact.id}
                           />
                           onView={(doc) => setViewingDocument(doc)}
+                          />
 
-                          {/* Document Viewer Modal */}
-                          <AnimatePresence>
-                            {viewingDocument && (
-                              <DocumentViewer 
-                                document={viewingDocument}
-                                onClose={() => setViewingDocument(null)}
-                              />
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="no-selection"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  <div className="flex justify-between items-start mb-6">
-                    <h2 className="text-xl font-bold">Contact Details</h2>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleEditContact}
-                        className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
-                        aria-label="Edit contact"
-                      >
-                        <EditIcon className="w-5 h-5 text-primary" />
-                      </button>
-                      <button
-                        onClick={handleDeleteContact}
-                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        aria-label="Delete contact"
-                      >
-                        <TrashIcon className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6 pb-6 border-b border-surface-200 dark:border-surface-700">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-                        {selectedContact.name.split(' ').map(name => name[0]).join('')}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">{selectedContact.name}</h3>
-                        <p className="text-surface-600 dark:text-surface-400">{selectedContact.position}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-6 flex-grow">
-                    <div>
-                      <h4 className="text-sm font-medium text-surface-500 mb-2">Contact Information</h4>
-                      <ul className="space-y-3">
-                        <li className="flex items-center gap-3">
-                          <BuildingIcon className="w-5 h-5 text-surface-400" />
-                          <span>{selectedContact.company}</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <BriefcaseIcon className="w-5 h-5 text-surface-400" />
-                          <span>{selectedContact.position}</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <MailIcon className="w-5 h-5 text-surface-400" />
-                          <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline">
-                            {selectedContact.email}
-                          </a>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <PhoneIcon className="w-5 h-5 text-surface-400" />
-                          <a href={`tel:${selectedContact.phone}`} className="text-primary hover:underline">
-                            {selectedContact.phone}
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-surface-500 mb-2">Status</h4>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(selectedContact.status)}
-                        <span className="capitalize">{selectedContact.status}</span>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-surface-500 mb-2">Last Contact</h4>
-                      <div className="flex items-center gap-2">
-                        <ClockIcon className="w-5 h-5 text-surface-400" />
-                        <span>{selectedContact.lastContact}</span>
-                      </div>
-                    </div>
-                    
-                    {selectedContact.tags && selectedContact.tags.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-medium text-surface-500 mb-2">Tags</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedContact.tags.map(tag => (
-                            <span 
-                              key={tag} 
-                              className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                    <FileTextIcon className="w-8 h-8 text-surface-400" />
+                  <h3 className="text-lg font-medium mb-2">No documents found</h3>
                     )}
                     
                     {/* Notes Section */}
