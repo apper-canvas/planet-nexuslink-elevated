@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
+import NotesSection from './notes/NotesSection';
 
 // Sample initial data for the CRM
 const initialContacts = [
@@ -14,7 +15,18 @@ const initialContacts = [
     phone: "555-123-4567",
     tags: ["client", "tech", "marketing"],
     status: "active",
-    lastContact: "2023-06-15"
+    lastContact: "2023-06-15",
+    notes: [
+      {
+        id: "note1",
+        text: "Had a great call about Q3 marketing campaign.",
+        author: "Current User",
+        timestamp: "2023-06-15T15:30:00",
+        mentions: []
+      }
+    ],
+    activities: [],
+    teamMembers: ["Current User", "David Lee", "Maria Rodriguez"]
   },
   {
     id: "2",
@@ -25,7 +37,9 @@ const initialContacts = [
     phone: "555-987-6543",
     tags: ["prospect", "retail"],
     status: "new",
-    lastContact: "2023-07-28"
+    lastContact: "2023-07-28",
+    notes: [],
+    teamMembers: ["Current User", "David Lee"]
   },
   {
     id: "3", 
@@ -36,12 +50,14 @@ const initialContacts = [
     phone: "555-456-7890",
     tags: ["client", "hospitality"],
     status: "inactive",
-    lastContact: "2023-05-10"
+    lastContact: "2023-05-10",
+    notes: [],
+    teamMembers: ["Current User", "Maria Rodriguez", "John Smith"]
   }
 ];
 
-const MainFeature = ({ darkMode }) => {
-  const [contacts, setContacts] = useState(() => {
+const MainFeature = ({ darkMode, currentUser }) => {
+  const [contacts, setContacts] = useState(() => {  
     const saved = localStorage.getItem('crm-contacts');
     return saved ? JSON.parse(saved) : initialContacts;
   });
@@ -60,6 +76,9 @@ const MainFeature = ({ darkMode }) => {
     phone: '',
     tags: [],
     status: 'new',
+    notes: [],
+    teamMembers: [currentUser || 'Current User'],
+    activities: []
   });
   const [newTag, setNewTag] = useState('');
   
@@ -128,6 +147,9 @@ const MainFeature = ({ darkMode }) => {
       phone: '',
       tags: [],
       status: 'new',
+      notes: [],
+      teamMembers: [currentUser || 'Current User'],
+      activities: []
     });
     setIsFormOpen(true);
   };
@@ -151,7 +173,8 @@ const MainFeature = ({ darkMode }) => {
       const newContact = {
         ...formData,
         id: Date.now().toString(),
-        lastContact: currentDate
+        lastContact: currentDate,
+        notes: []
       };
       
       setContacts(prev => [...prev, newContact]);
@@ -177,6 +200,36 @@ const MainFeature = ({ darkMode }) => {
     setContacts(prev => prev.filter(contact => contact.id !== selectedContact.id));
     setSelectedContact(null);
     toast.success('Contact deleted successfully!');
+  };
+  
+  const handleAddNote = (contactId, noteText, mentions) => {
+    const newNote = {
+      id: `note-${Date.now()}`,
+      text: noteText,
+      author: currentUser || 'Current User',
+      timestamp: new Date().toISOString(),
+      mentions
+    };
+    
+    setContacts(prev => 
+      prev.map(contact => 
+        contact.id === contactId
+          ? { 
+              ...contact, 
+              notes: [newNote, ...(contact.notes || [])],
+              lastContact: new Date().toISOString().split('T')[0]
+            }
+          : contact
+      )
+    );
+    
+    if (selectedContact && selectedContact.id === contactId) {
+      setSelectedContact(prev => ({
+        ...prev,
+        notes: [newNote, ...(prev.notes || [])],
+        lastContact: new Date().toISOString().split('T')[0]
+      }));
+    }
   };
   
   const handleAddTag = () => {
@@ -461,6 +514,17 @@ const MainFeature = ({ darkMode }) => {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Notes Section */}
+                    <NotesSection 
+                      contact={selectedContact} 
+                      onAddNote={handleAddNote}
+                      onUpdateContact={(updatedContact) => {
+                        setSelectedContact(updatedContact);
+                        setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+                      }}
+                      currentUser={currentUser || 'Current User'}
+                    />
                   </div>
                 </motion.div>
               ) : (

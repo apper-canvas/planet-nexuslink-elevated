@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
 
-const Home = ({ darkMode }) => {
+const Home = ({ darkMode, currentUser }) => {
   const [activeTab, setActiveTab] = useState('contacts');
   const navigate = useNavigate();
   // Icons
@@ -86,7 +86,7 @@ const Home = ({ darkMode }) => {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
         {activeTab === 'contacts' ? (
-          <MainFeature darkMode={darkMode} />
+          <MainFeature darkMode={darkMode} currentUser={currentUser} />
         ) : (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
