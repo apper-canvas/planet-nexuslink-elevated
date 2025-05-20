@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-toastify';
+import DocumentStorage from '../../services/DocumentStorage';
 import { getIcon } from '../../utils/iconUtils';
 import { validateDocument, getDocumentCategories, formatFileSize } from '../../utils/documentUtils';
-import { getDocumentCategories, formatFileSize } from '../../utils/documentUtils';
 
-const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
 const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect = false, contacts = [] }) => {
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [documentCategory, setDocumentCategory] = useState('general');
   const [description, setDescription] = useState('');
@@ -35,6 +35,15 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
     setIsUploading(true);
     setUploadProgress(0);
 
+    const docContactId = showContactSelect ? selectedContactId : contactId;
+    
+    // Validate required fields
+    if (!docContactId) {
+      toast.error('Please select a contact');
+      setIsUploading(false);
+      return;
+    }
+    
     // Create document object with metadata
     const newDocument = {
       filename: file.name,
@@ -43,21 +52,9 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
       description: description,
       uploadedBy: currentUser,
       uploadedAt: new Date().toISOString(),
-    const docContactId = showContactSelect ? selectedContactId : contactId;
-    
-    // Validate required fields
-    if (!docContactId) {
-      alert('Please select a contact');
-      setIsUploading(false);
-      return;
-    }
-    
-      contactId: contactId,
-      // In a real app, this would be the actual file URL from the server
+      contactId: docContactId,
       url: URL.createObjectURL(file)
     };
-    
-      contactId: docContactId,
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
@@ -74,6 +71,7 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
       
       try {
         // Store the document in our storage service
+        // In a real app, this would save the document to a server
         const savedDocument = DocumentStorage.addDocument(newDocument);
         
         // Call the onUpload callback with the new document
@@ -83,22 +81,21 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
         setIsUploading(false);
         setUploadProgress(0);
         setDocumentCategory('general');
-          data-testid="dropzone"
         setDescription('');
         
         toast.success(`Document "${file.name}" uploaded successfully`);
       } catch (error) {
         toast.error('Failed to save document: ' + error.message);
       }
-      toast.success('Document uploaded successfully');
     }, 2000);
-  }, [onUpload, contactId, currentUser, documentType, description]);
+  }, [onUpload, contactId, currentUser, documentCategory, description, selectedContactId, showContactSelect]);
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     disabled: isUploading,
-          
-          {showContactSelect && (
+    maxFiles: 1,
+    // In a real app, you might want to limit file types based on what your backend supports
+    accept: {
             <div>
               <label htmlFor="contact" className="block text-sm font-medium mb-1">
                 Select Contact *
@@ -107,16 +104,29 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
                 id="contact"
                 value={selectedContactId}
                 onChange={(e) => setSelectedContactId(e.target.value)}
-                className="input-field"
-                required
-              >
-                <option value="">Select a contact</option>
-                {contacts.map(contact => (
-                  <option key={contact.id} value={contact.id}>{contact.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+  });
+
+  return (
+    <div className="space-y-5 bg-surface-50 dark:bg-surface-800 p-5 rounded-lg border border-surface-200 dark:border-surface-700">
+      {showContactSelect && (
+        <div>
+          <label htmlFor="contact" className="block text-sm font-medium mb-1">
+            Select Contact *
+          </label>
+          <select
+            id="contact"
+            value={selectedContactId}
+            onChange={(e) => setSelectedContactId(e.target.value)}
+            className="input-field"
+            required
+          >
+            <option value="">Select a contact</option>
+            {contacts.map(contact => (
+              <option key={contact.id} value={contact.id}>{contact.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
     maxFiles: 1,
     // In a real app, you might want to limit file types based on what your backend supports
     accept: {
@@ -172,7 +182,7 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
 
         <div>
           {/* Dropzone */}
-          <div className={`document-dropzone h-full ${isDragActive ? 'document-dropzone-active' : ''}`} {...getRootProps()}>
+          <div data-testid="dropzone" className={`document-dropzone h-full ${isDragActive ? 'document-dropzone-active' : ''}`} {...getRootProps()}>
             <input {...getInputProps()} />
             <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
               <UploadIcon className="w-8 h-8 text-surface-400" />
