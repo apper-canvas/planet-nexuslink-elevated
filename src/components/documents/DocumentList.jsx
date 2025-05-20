@@ -135,7 +135,8 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
     return (
       <div className="flex flex-col items-center justify-center py-10 text-surface-500">
         <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
-          {const FileIcon = getIcon('file')}
+          {/* Get file icon component */}
+          {(() => { const FileIcon = getIcon('file'); return <FileIcon className="w-8 h-8 text-surface-400" />; })()}
           <FileIcon className="w-8 h-8 text-surface-400" />
         </div>
         <h3 className="text-lg font-medium mb-2">No documents found</h3>
