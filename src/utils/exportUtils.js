@@ -135,3 +135,33 @@ export const getFileTypeLabel = (filename) => {
       return ext.toUpperCase();
   }
 };
+
+/**
+ * Exports data to a PDF file and triggers download
+ * @param {Array|Object} data - Data to export to PDF
+ * @param {string} filename - Name of the file to download
+ */
+export const exportToPdf = (data, filename) => {
+  if (!data) {
+    throw new Error('No data to export');
+  }
+  
+  // For actual implementation, you would format the data for PDF
+  // This simplified version creates a text representation
+  let content = '';
+  
+  if (Array.isArray(data)) {
+    content = data.map(item => JSON.stringify(item, null, 2)).join('\n\n');
+  } else {
+    content = JSON.stringify(data, null, 2);
+  }
+  
+  // Create a Blob with the data
+  const blob = new Blob([content], { type: 'application/pdf' });
+  
+  // Use file-saver to trigger download
+  saveAs(blob, `${filename}.pdf`);
+};
+
+// Alias with lowercase naming for backward compatibility
+export const exporttopdf = exportToPdf;
