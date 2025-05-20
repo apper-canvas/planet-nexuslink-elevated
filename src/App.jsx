@@ -9,6 +9,7 @@ import NotFound from './pages/NotFound';
 
 const DEFAULT_USER = 'Current User';
 
+function App() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -119,6 +120,7 @@ const DEFAULT_USER = 'Current User';
                   <span className="absolute top-0 right-0 w-4 h-4 bg-accent text-white text-xs rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
+                )}
               </button>
               
               {showNotifications && (
@@ -210,6 +212,6 @@ const DEFAULT_USER = 'Current User';
       />
     </div>
   );
-};
+}
 
 export default App;
