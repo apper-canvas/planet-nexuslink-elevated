@@ -10,7 +10,7 @@ const Home = ({ darkMode, currentUser }) => {
   const navigate = useNavigate();
   // Icons
   const DashboardIcon = getIcon('layout-dashboard');
-  const UsersIcon = getIcon('users');
+const Home = ({ darkMode, currentUser }) => {
   const DollarSignIcon = getIcon('dollar-sign');
   const CalendarIcon = getIcon('calendar');
   const MailIcon = getIcon('mail');
@@ -119,3 +119,4 @@ const Home = ({ darkMode, currentUser }) => {
 };
 
 export default Home;
+                currentUser={currentUser}
