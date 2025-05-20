@@ -9,7 +9,6 @@ import NotFound from './pages/NotFound';
 
 const DEFAULT_USER = 'Current User';
 
-const App = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -27,6 +26,27 @@ const App = () => {
     }
   }, []);
   
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.theme = newMode ? 'dark' : 'light';
+    
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+  
+  const markNotificationAsRead = (id) => {
+    setNotifications(prev => {
+      const updated = prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      );
+      localStorage.setItem('crm-notifications', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     // Load notifications from localStorage
@@ -48,7 +68,7 @@ const App = () => {
     
     window.addEventListener('new-notification', handleNewNotification);
     return () => window.removeEventListener('new-notification', handleNewNotification);
-  };
+  }, []);
   
   const clearAllNotifications = () => {
     setNotifications([]);
@@ -62,59 +82,6 @@ const App = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setShowNotifications(false);
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.theme = newMode ? 'dark' : 'light';
-    
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-  };
-
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-    setDarkMode(newMode);
-    localStorage.theme = newMode ? 'dark' : 'light';
-    
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-  
-  const markNotificationAsRead = (id) => {
-    setNotifications(prev => {
-      const updated = prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      );
-      localStorage.setItem('crm-notifications', JSON.stringify(updated));
-      return updated;
-    });
-  };
-  
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    localStorage.setItem('crm-notifications', JSON.stringify([]));
-    toast.success('All notifications cleared');
-  };
-  
-  const notificationRef = useRef(null);
-  
-  // Close notifications panel when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-          <Route path="/" element={<Home darkMode={darkMode} currentUser={DEFAULT_USER} />} />
         setShowNotifications(false);
       }
     };
@@ -146,13 +113,12 @@ const App = () => {
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Notifications"
-                className="p-2 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors relative"
-
+                className="p-2 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors relative">
+                <BellIcon className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 w-4 h-4 bg-accent text-white text-xs rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
-                )}
               </button>
               
               {showNotifications && (
