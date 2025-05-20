@@ -165,3 +165,6 @@ export const exportToPdf = (data, filename) => {
 
 // Alias with lowercase naming for backward compatibility
 export const exporttopdf = exportToPdf;
+
+// Alias with uppercase naming for backward compatibility
+export const exportToCSV = exportToCsv;
