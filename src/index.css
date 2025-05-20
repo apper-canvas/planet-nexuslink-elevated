@@ -183,3 +183,40 @@ body {
     }
   }
 }
+
+  /* Email styles */
+  .email-list-item {
+    @apply border-b border-surface-200 dark:border-surface-700 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors cursor-pointer;
+  }
+
+  .email-unread {
+    @apply font-medium bg-blue-50 dark:bg-blue-900/20;
+  }
+
+  .email-sender {
+    @apply font-medium text-surface-900 dark:text-white;
+  }
+
+  .email-subject {
+    @apply font-medium truncate;
+  }
+
+  .email-preview {
+    @apply text-sm text-surface-600 dark:text-surface-400 truncate;
+  }
+
+  .email-timestamp {
+    @apply text-xs text-surface-500 whitespace-nowrap;
+  }
+
+  .email-actions {
+    @apply flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity;
+  }
+
+  .email-action-btn {
+    @apply p-1.5 rounded hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors;
+  }
+
+  .email-attachment {
+    @apply flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-sm;
+  }

@@ -16,6 +16,11 @@ export const getIcon = (iconName) => {
       return Icons[pascalCase];
     }
   }
+
+  // Special case for star-filled icon (not in lucide-react)
+  if (iconName === 'star-filled') {
+    return Icons.Star;
+  }
   
   // Fallback to Smile icon
   return Icons.Smile;
