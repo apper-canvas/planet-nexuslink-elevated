@@ -84,6 +84,31 @@ body {
     transition-property: transform, opacity;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
+
+  /* Stats cards for dashboard and deals */
+  .stat-card {
+    @apply bg-white dark:bg-surface-800 rounded-lg shadow-sm p-4 border border-surface-200 dark:border-surface-700;
+  }
+
+  .stat-label {
+    @apply text-sm text-surface-500 dark:text-surface-400 block mb-1;
+  }
+
+  .stat-value {
+    @apply text-xl font-bold;
+  }
+
+  /* Deal pipeline styles */
+  .pipeline-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(203, 213, 225, 0.5) transparent;
+  }
+
+  .pipeline-container::-webkit-scrollbar {
+    height: 8px;
+    background: transparent;
+  }
+
   }
   
   .animate-upload {

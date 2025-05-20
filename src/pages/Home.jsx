@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { getIcon } from '../utils/iconUtils';
+import DealsModule from '../components/deals/DealsModule';
 import MainFeature from '../components/MainFeature';
 
 const Home = ({ darkMode, currentUser }) => {
@@ -35,8 +36,6 @@ const Home = ({ darkMode, currentUser }) => {
     if (item && item.path) {
       navigate(item.path);
       return;
-    } else if (tabId !== 'contacts') {
-      toast.info(`${tabId.charAt(0).toUpperCase() + tabId.slice(1)} feature will be available in the next release.`);
     }
   };
   
@@ -87,6 +86,8 @@ const Home = ({ darkMode, currentUser }) => {
       <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
         {activeTab === 'contacts' ? (
           <MainFeature darkMode={darkMode} currentUser={currentUser} />
+        ) : activeTab === 'deals' ? (
+          <DealsModule darkMode={darkMode} currentUser={currentUser} />
         ) : (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
