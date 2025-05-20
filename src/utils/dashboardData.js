@@ -66,9 +66,7 @@ export const generateSalesData = (timeframe, regionFilter, teamFilter, productFi
  * @param {string} regionFilter - Filter by region
  * @param {string} teamFilter - Filter by team 
  * @returns {Array} Array of team member performance objects
-export const generateTeamData = (timeframe, regionFilter, teamFilter) => {  
-  const deals = DealsService.getAllDeals();
-  const hasDeals = deals.length > 0;
+ */
 export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
   const periods = getPeriodsByTimeframe(timeframe);
   
@@ -88,9 +86,15 @@ export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
     }
   }
   
+  const deals = DealsService.getAllDeals();
+  const hasDeals = deals.length > 0;
+  
   // Apply region filter
   const regionMultiplier = regionFilter === 'all' ? 1 : 
     (regionFilter === 'north-america' ? 1.2 : 
+     regionFilter === 'europe' ? 0.9 :
+     regionFilter === 'asia-pacific' ? 1.1 : 0.8);
+
   // Get deal counts by owner
   const dealsByOwner = {};
   if (hasDeals) {
@@ -98,9 +102,6 @@ export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
       dealsByOwner[deal.ownerId] = (dealsByOwner[deal.ownerId] || 0) + 1;
     });
   }
-  
-     regionFilter === 'europe' ? 0.9 :
-  return teamMembers.map((member, index) => {
   
   // Generate data for each team member
   return teamMembers.map(member => {
@@ -125,11 +126,12 @@ export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
           const periodVariance = 0.7 + (Math.random() * 0.6); // 0.7 to 1.3
           dealsCount = Math.max(1, Math.round(
             (ownerDeals / periods.length) * periodVariance * regionMultiplier
-        ));
+          ));
+        }
         
         return {
           period,
-          deals
+          deals: dealsCount
         };
       })
     };
