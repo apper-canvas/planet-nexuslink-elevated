@@ -7,6 +7,7 @@ import DealsModule from '../components/deals/DealsModule';
 import ActivitiesModule from '../components/activities/ActivitiesModule';
 import EmailModule from '../components/email/EmailModule';
 import ReportsModule from '../components/reports/ReportsModule';
+import SettingsModule from '../components/settings/SettingsModule';
 import MainFeature from '../components/MainFeature';
 
 const Home = ({ darkMode, currentUser }) => {
@@ -97,6 +98,8 @@ const Home = ({ darkMode, currentUser }) => {
           <EmailModule darkMode={darkMode} currentUser={currentUser} />
         ) : activeTab === 'reports' ? (
           <ReportsModule darkMode={darkMode} currentUser={currentUser} />
+        ) : activeTab === 'settings' ? (
+          <SettingsModule darkMode={darkMode} currentUser={currentUser} />
         ) : (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
