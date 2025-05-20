@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import { getIcon } from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
 
 const Home = ({ darkMode }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  
+  const [activeTab, setActiveTab] = useState('contacts');
+  const navigate = useNavigate();
   // Icons
   const DashboardIcon = getIcon('layout-dashboard');
   const UsersIcon = getIcon('users');
@@ -17,7 +18,7 @@ const Home = ({ darkMode }) => {
   const SettingsIcon = getIcon('settings');
   
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
     { id: 'contacts', label: 'Contacts', icon: UsersIcon },
     { id: 'deals', label: 'Deals', icon: DollarSignIcon },
     { id: 'activities', label: 'Activities', icon: CalendarIcon },
@@ -28,7 +29,13 @@ const Home = ({ darkMode }) => {
   
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    if (tabId !== 'contacts') {
+    
+    // Special handling for navigation items with paths
+    const item = navigationItems.find(item => item.id === tabId);
+    if (item && item.path) {
+      navigate(item.path);
+      return;
+    } else if (tabId !== 'contacts') {
       toast.info(`${tabId.charAt(0).toUpperCase() + tabId.slice(1)} feature will be available in the next release.`);
     }
   };

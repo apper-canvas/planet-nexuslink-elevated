@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getIcon } from './utils/iconUtils';
 import Home from './pages/Home';
+import Dashboard from './components/dashboard/Dashboard';
 import NotFound from './pages/NotFound';
 
 const App = () => {
@@ -59,6 +60,7 @@ const App = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home darkMode={darkMode} />} />
+          <Route path="/dashboard" element={<Dashboard darkMode={darkMode} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
