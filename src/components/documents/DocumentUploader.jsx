@@ -94,16 +94,15 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
     onDrop,
     disabled: isUploading,
     maxFiles: 1,
-    // In a real app, you might want to limit file types based on what your backend supports
     accept: {
-            <div>
-              <label htmlFor="contact" className="block text-sm font-medium mb-1">
-                Select Contact *
-              </label>
-              <select
-                id="contact"
-                value={selectedContactId}
-                onChange={(e) => setSelectedContactId(e.target.value)}
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png']
+    }
   });
 
   return (
@@ -127,21 +126,6 @@ const DocumentUploader = ({ onUpload, contactId, currentUser, showContactSelect 
           </select>
         </div>
       )}
-    maxFiles: 1,
-    // In a real app, you might want to limit file types based on what your backend supports
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png']
-    }
-  });
-
-  return (
-    <div className="space-y-5 bg-surface-50 dark:bg-surface-800 p-5 rounded-lg border border-surface-200 dark:border-surface-700">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           {/* Document category */}
