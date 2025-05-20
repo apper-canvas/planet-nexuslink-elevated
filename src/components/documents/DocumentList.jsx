@@ -3,13 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../../utils/iconUtils';
 import { getFileExtension, getFileTypeIcon, getFileTypeLabel } from '../../utils/exportUtils';
+import { getDocumentCategories, getDocumentCategoryLabel, formatFileSize } from '../../utils/documentUtils';
 import DocumentVersionHistory from './DocumentVersionHistory';
+import DocumentStorage from '../../services/DocumentStorage';
 
 const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId, searchTerm = '' }) => {
   const [filteredDocs, setFilteredDocs] = useState(documents);
   const [sortConfig, setSortConfig] = useState({ key: 'uploadedAt', direction: 'desc' });
   const [showVersionHistory, setShowVersionHistory] = useState(null);
   const [actionMenuDoc, setActionMenuDoc] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState('all');
   
   // Icons
   const GridIcon = getIcon('grid');
@@ -32,9 +35,16 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       docs = docs.filter(doc => 
-        doc.filename.toLowerCase().includes(term) || 
+        doc.filename?.toLowerCase().includes(term) || 
+        doc.description?.toLowerCase().includes(term) || 
         doc.type?.toLowerCase().includes(term) ||
-        doc.description?.toLowerCase().includes(term)
+        getDocumentCategoryLabel(doc.type)?.toLowerCase().includes(term)
+      );
+    }
+    
+    if (categoryFilter !== 'all') {
+      docs = docs.filter(doc => 
+        doc.type === categoryFilter
       );
     }
     
@@ -50,7 +60,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
     });
     
     setFilteredDocs(docs);
-  }, [documents, searchTerm, sortConfig]);
+  }, [documents, searchTerm, sortConfig, categoryFilter]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -67,9 +77,16 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
   const handleDelete = (docId) => {
     if (confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
       if (onDelete) onDelete(docId);
-      toast.success('Document deleted successfully');
+      
+      // Delete from storage service
+      const result = DocumentStorage.deleteDocument(docId);
+      if (result) {
+        toast.success('Document deleted successfully');
+      } else {
+        toast.error('Failed to delete document');
+      }
     }
-    setActionMenuDoc(null);
+    setActionMenuDoc(null); 
   };
 
   const handleDownload = (doc) => {
@@ -118,7 +135,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
     return (
       <div className="flex flex-col items-center justify-center py-10 text-surface-500">
         <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
-          <getIcon.icon('file-text') className="w-8 h-8 text-surface-400" />
+          <FileIcon className="w-8 h-8 text-surface-400" />
         </div>
         <h3 className="text-lg font-medium mb-2">No documents found</h3>
         <p className="text-center max-w-md mb-6">
@@ -133,13 +150,45 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
   return (
     <div>
       {/* Document list toolbar */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-surface-500">
-          Showing {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="input-field py-1.5 pl-3 pr-8 text-sm"
+            >
+              <option value="all">All Categories</option>
+              {getDocumentCategories().map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <getIcon('chevron-down') className="w-4 h-4 text-surface-500" />
+            </div>
+          </div>
+          
+          <div className="text-sm text-surface-500 whitespace-nowrap">
+            {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleSort('type')}
+            className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-700"
+          >
+            Category
+            {sortConfig.key === 'type' && (
+              sortConfig.direction === 'asc' ? <SortAscIcon className="w-3 h-3" /> : <SortDescIcon className="w-3 h-3" />
+            )}
+          </button>
+          
           <button
             onClick={() => handleSort('filename')}
+            title="Sort by filename"
             className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-700"
           >
             Name
@@ -149,6 +198,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
           </button>
           <button
             onClick={() => handleSort('uploadedAt')}
+            title="Sort by upload date"
             className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-700"
           >
             Date
@@ -157,8 +207,10 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
             )}
           </button>
           <div className="h-5 w-px bg-surface-300 dark:bg-surface-600 mx-1"></div>
+          
           <button
             onClick={() => setViewMode('grid')}
+            title="Grid view"
             className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-surface-200 dark:bg-surface-700' : 'hover:bg-surface-100 dark:hover:bg-surface-700'}`}
           >
             <GridIcon className="w-4 h-4" />
@@ -196,13 +248,16 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                   <span className={`document-type-badge ${typeColor}`}>
                     {getFileTypeLabel(doc.filename)}
                   </span>
+                  <span className="document-type-badge bg-primary/10 text-primary ml-1">
+                    {getDocumentCategoryLabel(doc.type)}
+                  </span>
                   <h3 className="font-medium mt-2 truncate" title={doc.filename}>{doc.filename}</h3>
                   <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                     Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="document-card-footer flex justify-between items-center">
-                  <span className="text-xs text-surface-500">By {doc.uploadedBy}</span>
+                  <span className="text-xs text-surface-500">{formatFileSize(doc.size)}</span>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleView(doc)}
@@ -258,8 +313,9 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
       {viewMode === 'list' && (
         <div className="border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden">
           <table className="w-full">
-            <thead className="bg-surface-100 dark:bg-surface-800 text-left">
+            <thead className="bg-surface-100 dark:bg-surface-800 text-left text-xs">
               <tr>
+                <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium text-sm">Document</th>
                 <th className="px-4 py-2 font-medium text-sm hidden sm:table-cell">Uploaded by</th>
                 <th className="px-4 py-2 font-medium text-sm hidden md:table-cell">Date</th>
@@ -272,6 +328,9 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                 const typeColor = getDocumentTypeColor(doc.filename);
                 
                 return (
+                  <tr key={doc.id} className="border-t border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800">
+                    <td className="px-4 py-3">
+                      {getDocumentCategoryLabel(doc.type)}
                   <tr key={doc.id} className="border-t border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -293,7 +352,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
                       {doc.uploadedBy}
                     </td>
                     <td className="px-4 py-3 text-sm text-surface-600 dark:text-surface-400 hidden md:table-cell">
-                      {new Date(doc.uploadedAt).toLocaleDateString()}
+                      {new Date(doc.uploadedAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">

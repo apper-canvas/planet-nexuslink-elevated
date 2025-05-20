@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../../utils/iconUtils';
+import { validateDocument, getDocumentCategories, formatFileSize } from '../../utils/documentUtils';
+import DocumentStorage from '../../services/DocumentStorage';
 
 const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [documentType, setDocumentType] = useState('general');
+  const [documentCategory, setDocumentCategory] = useState('general');
   const [description, setDescription] = useState('');
 
   // Icons
@@ -16,52 +17,68 @@ const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
   const XIcon = getIcon('x');
 
   const onDrop = useCallback(acceptedFiles => {
-    if (acceptedFiles.length === 0) return;
+    if (acceptedFiles.length === 0) {
+      toast.error('No valid files selected');
+      return;
+    }
     
-    // In a real app, we would upload the file to a server here
-    // For this prototype, we'll simulate the upload with a timeout
+    const file = acceptedFiles[0];
+    
+    // Validate file
+    const validation = validateDocument(file);
+    if (!validation.isValid) {
+      toast.error(validation.error);
+      return;
+    }
+    
     setIsUploading(true);
     setUploadProgress(0);
+
+    // Create document object with metadata
+    const newDocument = {
+      filename: file.name,
+      size: file.size,
+      type: documentCategory,
+      description: description,
+      uploadedBy: currentUser,
+      uploadedAt: new Date().toISOString(),
+      contactId: contactId,
+      // In a real app, this would be the actual file URL from the server
+      url: URL.createObjectURL(file)
+    };
     
+    // Simulate upload with progress
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           return 100;
         }
-        return prev + 10;
+        return prev + 5;
       });
-    }, 200);
+    }, 100);
     
     setTimeout(() => {
       clearInterval(interval);
       setUploadProgress(100);
       
-      // Create document object with metadata
-      const file = acceptedFiles[0];
-      const newDocument = {
-        id: `doc-${Date.now()}`,
-        filename: file.name,
-        size: file.size,
-        type: documentType,
-        description: description,
-        uploadedBy: currentUser,
-        uploadedAt: new Date().toISOString(),
-        contactId: contactId,
-        version: 1,
-        // In a real app, this would be the actual file URL from the server
-        url: URL.createObjectURL(file)
-      };
-      
-      // Call the onUpload callback with the new document
-      onUpload(newDocument);
-      
-      // Reset form
-      setIsUploading(false);
-      setUploadProgress(0);
-      setDocumentType('general');
-      setDescription('');
-      
+      try {
+        // Store the document in our storage service
+        const savedDocument = DocumentStorage.addDocument(newDocument);
+        
+        // Call the onUpload callback with the new document
+        onUpload(savedDocument);
+        
+        // Reset form
+        setIsUploading(false);
+        setUploadProgress(0);
+        setDocumentCategory('general');
+        setDescription('');
+        
+        toast.success(`Document "${file.name}" uploaded successfully`);
+      } catch (error) {
+        toast.error('Failed to save document: ' + error.message);
+      }
       toast.success('Document uploaded successfully');
     }, 2000);
   }, [onUpload, contactId, currentUser, documentType, description]);
@@ -83,28 +100,67 @@ const DocumentUploader = ({ onUpload, contactId, currentUser }) => {
   });
 
   return (
-    <div className="space-y-4">
-      <div className={`document-dropzone ${isDragActive ? 'document-dropzone-active' : ''}`} {...getRootProps()}>
-        <input {...getInputProps()} />
-        <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
-          <UploadIcon className="w-8 h-8 text-surface-400" />
-        </div>
-        {isUploading ? (
-          <div className="w-full max-w-xs">
-            <p className="mb-2">Uploading document...</p>
-            <div className="h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300 ease-out"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
+    <div className="space-y-5 bg-surface-50 dark:bg-surface-800 p-5 rounded-lg border border-surface-200 dark:border-surface-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          {/* Document category */}
+          <div className="mb-4">
+            <label htmlFor="documentCategory" className="block text-sm font-medium mb-1">
+              Document Category
+            </label>
+            <select
+              id="documentCategory"
+              value={documentCategory}
+              onChange={(e) => setDocumentCategory(e.target.value)}
+              className="input-field"
+              disabled={isUploading}
+            >
+              {getDocumentCategories().map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
           </div>
-        ) : (
-          <>
-            <p className="font-medium mb-1">Drag and drop a file here, or click to select</p>
-            <p className="text-sm text-surface-500">Supports PDF, Word, Excel, and image files up to 10MB</p>
-          </>
-        )}
+
+          {/* Document description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium mb-1">
+              Description (optional)
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field min-h-[80px]"
+              placeholder="Enter document description..."
+              disabled={isUploading}
+            />
+          </div>
+        </div>
+
+        <div>
+          {/* Dropzone */}
+          <div className={`document-dropzone h-full ${isDragActive ? 'document-dropzone-active' : ''}`} {...getRootProps()}>
+            <input {...getInputProps()} />
+            <div className="w-16 h-16 rounded-full bg-surface-100 dark:bg-surface-700 flex items-center justify-center mb-4">
+              <UploadIcon className="w-8 h-8 text-surface-400" />
+            </div>
+            {isUploading ? (
+              <div className="w-full max-w-xs">
+                <p className="mb-2">Uploading document... {uploadProgress}%</p>
+                <div className="h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center">Drag and drop a file here, or click to select</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

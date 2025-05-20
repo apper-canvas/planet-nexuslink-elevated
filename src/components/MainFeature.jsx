@@ -6,6 +6,7 @@ import NotesSection from './notes/NotesSection';
 import DocumentList from './documents/DocumentList';
 import DocumentUploader from './documents/DocumentUploader';
 import DocumentViewer from './documents/DocumentViewer';
+import DocumentStorage from '../services/DocumentStorage';
 
 // Sample initial data for the CRM
 const initialContacts = [
@@ -87,6 +88,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
   const [activeTab, setActiveTab] = useState('details');
   const [viewingDocument, setViewingDocument] = useState(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentSearchTerm, setDocumentSearchTerm] = useState('');
   const [formMode, setFormMode] = useState('add'); // 'add' or 'edit'
   const [formData, setFormData] = useState({
     name: '',
@@ -123,6 +125,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
   
   const FileTextIcon = getIcon('file-text');
   const UploadIcon = getIcon('upload');
+  const SearchIcon = getIcon('search');
   // Save contacts to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('crm-contacts', JSON.stringify(contacts));
@@ -255,47 +258,32 @@ const MainFeature = ({ darkMode, currentUser }) => {
     }
   };
 
-  const handleAddDocument = (document) => {
+  const handleAddDocument = (newDocument) => {
     if (!selectedContact) return;
 
-    // Update the selected contact with the new document
-    const updatedContact = {
-      ...selectedContact,
-      documents: [document, ...(selectedContact.documents || [])]
-    };
+    // Load the latest documents from storage
+    const contactDocuments = DocumentStorage.getDocumentsByContact(selectedContact.id);
 
-    // Update the contacts list
-    setContacts(prev =>
-      prev.map(contact =>
-        contact.id === selectedContact.id ? updatedContact : contact
-      )
-    );
+    // Update selected contact with documents from storage
+    const updatedContact = { ...selectedContact, documents: contactDocuments };
 
-    // Update the selected contact in the UI
+    // Update contacts list
+    setContacts(prev => prev.map(contact => 
+      contact.id === selectedContact.id ? updatedContact : contact
+    ));
+    
     setSelectedContact(updatedContact);
     setIsUploadingDocument(false);
+    toast.success(`Document "${newDocument.filename}" added to ${selectedContact.name}`);
   };
 
   const handleDeleteDocument = (documentId) => {
     if (!selectedContact) return;
 
-    // Filter out the deleted document
-    const updatedDocuments = selectedContact.documents.filter(doc => doc.id !== documentId);
+    // Refresh documents after deletion
+    const updatedDocuments = DocumentStorage.getDocumentsByContact(selectedContact.id);
     
-    // Update the selected contact
-    const updatedContact = {
-      ...selectedContact,
-      documents: updatedDocuments
-    };
-
-    // Update the contacts list
-    setContacts(prev =>
-      prev.map(contact =>
-        contact.id === selectedContact.id ? updatedContact : contact
-      )
-    );
-
-    setSelectedContact(updatedContact);
+    setSelectedContact({ ...selectedContact, documents: updatedDocuments });
   };
   
   const handleAddTag = () => {
@@ -636,25 +624,46 @@ const MainFeature = ({ darkMode, currentUser }) => {
                       {/* Documents Tab */}
                       {activeTab === 'documents' && (
                         <div>
-                          <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-sm font-medium text-surface-500">Document Library</h4>
-                            {isUploadingDocument ? (
-                              <button
-                                onClick={() => setIsUploadingDocument(false)}
-                                className="btn-secondary flex items-center gap-1 py-1.5 text-sm"
-                              >
-                                <XIcon className="w-4 h-4" />
-                                <span>Cancel</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setIsUploadingDocument(true)}
-                                className="btn-primary flex items-center gap-1 py-1.5 text-sm"
-                              >
-                                <UploadIcon className="w-4 h-4" />
-                                <span>Upload Document</span>
-                              </button>
-                            )}
+                          {/* Document Header with search and upload button */}
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium text-surface-500 mb-2">Document Library</h4>
+                              <div className="relative">
+                                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400 w-4 h-4" />
+                                <input
+                                  type="text"
+                                  placeholder="Search documents..."
+                                  value={documentSearchTerm}
+                                  onChange={(e) => setDocumentSearchTerm(e.target.value)}
+                                  className="input-field py-1.5 pl-10 pr-3 text-sm"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="self-end">
+                              {isUploadingDocument ? (
+                                <button
+                                  onClick={() => setIsUploadingDocument(false)}
+                                  className="btn-secondary flex items-center gap-1 py-1.5 text-sm"
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                  <span>Cancel</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setIsUploadingDocument(true)}
+                                  className="btn-primary flex items-center gap-1 py-1.5 text-sm"
+                                >
+                                  <UploadIcon className="w-4 h-4" />
+                                  <span>Upload Document</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Document upload notification */}
+                          <div className="text-xs text-surface-500 mb-1">
+                            Upload contracts, proposals, specifications, and other customer-related documents.
                           </div>
 
                           {/* Document Uploader */}
@@ -671,7 +680,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
                           {/* Document List */}
                           <DocumentList 
                             documents={selectedContact.documents || []}
-                            onView={(doc) => setViewingDocument(doc)}
+                            searchTerm={documentSearchTerm}
                             onDelete={handleDeleteDocument}
                             onDownload={(doc) => {
                               // In a real app, this would handle the document download
@@ -679,6 +688,7 @@ const MainFeature = ({ darkMode, currentUser }) => {
                             }}
                             contactId={selectedContact.id}
                           />
+                          onView={(doc) => setViewingDocument(doc)}
 
                           {/* Document Viewer Modal */}
                           <AnimatePresence>
