@@ -86,7 +86,7 @@ export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
     }
   }
   
-  const deals = DealsService.getAllDeals();
+  const deals = DealService.getAllDeals();
   const hasDeals = deals.length > 0;
   
   // Apply region filter
@@ -199,7 +199,7 @@ export const calculateKpiMetrics = (data) => {
   const { sales, team, customer } = data;
   
   // Calculate total revenue from actual deals
-  const deals = DealsService.getAllDeals();
+  const deals = DealService.getAllDeals();
   const hasDeals = deals.length > 0;
   
   const totalRevenue = sales.reduce((sum, item) => sum + item.revenue, 0);
