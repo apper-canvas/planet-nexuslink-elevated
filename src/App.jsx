@@ -410,7 +410,7 @@ function App() {
               <SearchIcon className="w-5 h-5" />
             </button>
             
-                      <h3 className="font-medium">{isLoadingNotifications ? 'Loading...' : 'Notifications'}</h3>
+            <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Notifications"
@@ -423,16 +423,10 @@ function App() {
                 )}
               </button>
               
-                        isLoadingNotifications ? (
-                          <div className="p-4 text-center text-surface-500 dark:text-surface-400">
-                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                            Loading notifications...
-                          </div>
-                        ) : (
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-surface-800 shadow-lg rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
                   <div className="p-3 border-b border-surface-200 dark:border-surface-700 flex justify-between items-center">
-                    <h3 className="font-medium">Notifications</h3>
+                    <h3 className="font-medium">{isLoadingNotifications ? 'Loading...' : 'Notifications'}</h3>
                     {notifications.length > 0 && (
                       <button 
                         onClick={clearAllNotifications}
@@ -444,11 +438,16 @@ function App() {
                     )}
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
+                    {isLoadingNotifications ? (
+                      <div className="p-4 text-center text-surface-500 dark:text-surface-400">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        Loading notifications...
+                      </div>
+                    ) : notifications.length === 0 ? (
                       <div className="p-4 text-center text-surface-500 dark:text-surface-400">
                         No notifications yet
                       </div>
-                                  {notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'Just now'}
+                    ) : (
                       notifications.map(notification => (
                         <div 
                           key={notification.id} 
@@ -462,7 +461,7 @@ function App() {
                                 <span className="font-medium">{notification.from}</span> mentioned you in a note about <span className="font-medium">{notification.contactName}</span>
                               </p>
                               <p className="text-xs text-surface-500 dark:text-surface-400">
-                                {new Date(notification.timestamp).toLocaleString()}
+                                {notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'Just now'}
                               </p>
                             </div>
                           </div>
@@ -477,11 +476,6 @@ function App() {
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/callback" element={<Callback />} />
-          <Route path="/error" element={<ErrorPage />} />
-          <Route path="/" element={<Home darkMode={darkMode} currentUser={currentUser} />} />
             >
               {darkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
             </button>
@@ -491,7 +485,11 @@ function App() {
       
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home darkMode={darkMode} currentUser={DEFAULT_USER} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/callback" element={<Callback />} />
+          <Route path="/error" element={<ErrorPage />} />
+          <Route path="/" element={<Home darkMode={darkMode} currentUser={currentUser} />} />
           <Route path="/dashboard" element={<Dashboard darkMode={darkMode} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
