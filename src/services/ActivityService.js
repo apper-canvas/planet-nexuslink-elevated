@@ -1,140 +1,246 @@
-import { format, addDays, subDays } from 'date-fns';
+/**
+ * ActivityService.js
+ * Service for managing activities using ApperClient
+ */
 
-// In-memory storage for activities
-let activities = [
-  {
-    id: '1',
-    title: 'Call with John Smith',
-    type: 'call',
-    status: 'pending',
-    description: 'Follow up about the new project proposal',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: '10:30',
-    duration: 30,
-    location: 'Phone',
-    relatedTo: {
-      type: 'contact',
-      id: '1',
-      name: 'John Smith'
-    },
-    assignedTo: 'Current User',
-    reminder: true,
-    reminderTime: '15',
-    reminderUnit: 'minutes'
-  },
-  {
-    id: '2',
-    title: 'Meeting with Design Team',
-    type: 'meeting',
-    status: 'completed',
-    description: 'Review wireframes for the new dashboard',
-    date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
-    time: '14:00',
-    duration: 60,
-    location: 'Conference Room B',
-    relatedTo: {
-      type: 'deal',
-      id: '2',
-      name: 'Website Redesign Project'
-    },
-    assignedTo: 'Current User',
-    reminder: false
-  },
-  {
-    id: '3',
-    title: 'Send proposal to ABC Corp',
-    type: 'email',
-    status: 'pending',
-    description: 'Send updated proposal with revised pricing',
-    date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
-    time: '09:00',
-    duration: 15,
-    location: '',
-    relatedTo: {
-      type: 'contact',
-      id: '3',
-      name: 'ABC Corp'
-    },
-    assignedTo: 'Current User',
-    reminder: true,
-    reminderTime: '1',
-    reminderUnit: 'hours'
-  },
-  {
-    id: '4',
-    title: 'Prepare quarterly report',
-    type: 'task',
-    status: 'pending',
-    description: 'Compile Q3 sales figures and create presentation',
-    date: format(addDays(new Date(), 2), 'yyyy-MM-dd'),
-    time: '12:00',
-    duration: 120,
-    location: '',
-    relatedTo: {
-      type: 'deal',
-      id: '4',
-      name: 'Q3 Review'
-    },
-    assignedTo: 'Current User',
-    reminder: true,
-    reminderTime: '1',
-    reminderUnit: 'days'
-  },
-  {
-    id: '5',
-    title: 'Project deadline',
-    type: 'deadline',
-    status: 'pending',
-    description: 'Final delivery of the marketing automation project',
-    date: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-    time: '18:00',
-    duration: 0,
-    location: '',
-    relatedTo: {
-      type: 'deal',
-      id: '5', 
-      name: 'Marketing Automation'
-    },
-    assignedTo: 'Current User',
-    reminder: true,
-    reminderTime: '2',
-    reminderUnit: 'days'
-  }
+// Fields based on the table definition
+const FIELDS = [
+  'Name',
+  'Tags',
+  'Owner',
+  'CreatedOn',
+  'CreatedBy',
+  'ModifiedOn',
+  'ModifiedBy',
+  'title',
+  'type',
+  'status',
+  'description',
+  'date',
+  'time',
+  'duration',
+  'location',
+  'relatedToType',
+  'relatedToId',
+  'reminder',
+  'reminderTime',
+  'reminderUnit',
+  'assignedTo'
 ];
 
-// Get all activities
-export const getAllActivities = () => {
-  return Promise.resolve([...activities]);
-};
-
-// Get activity by ID
-export const getActivityById = (id) => {
-  const activity = activities.find(a => a.id === id);
-  return Promise.resolve(activity ? { ...activity } : null);
-};
-
-// Save activity (create or update)
-export const saveActivity = (activity) => {
-  if (activities.some(a => a.id === activity.id)) {
-    // Update existing
-    activities = activities.map(a => a.id === activity.id ? { ...activity } : a);
-  } else {
-    // Create new
-    activities.push({ ...activity });
+class ActivityService {
+  constructor() {
+    this.tableName = 'Activity1';
+    this.initialize();
   }
-  return Promise.resolve({ ...activity });
-};
 
-// Delete activity
-export const deleteActivity = (id) => {
-  activities = activities.filter(a => a.id !== id);
-  return Promise.resolve({ success: true });
-};
+  initialize() {
+    const { ApperClient } = window.ApperSDK;
+    this.apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+  }
 
-// Get activities by contact or deal ID
-export const getActivitiesByRelated = (type, id) => {
-  const filtered = activities.filter(
-    a => a.relatedTo?.type === type && a.relatedTo?.id === id
-  );
-  return Promise.resolve([...filtered]);
-};
+  /**
+   * Get all activities with optional filtering
+   * @param {Object} options - Query options
+   * @returns {Promise} Promise resolving to activities data
+   */
+  async getActivities(options = {}) {
+    try {
+      const params = {
+        fields: FIELDS,
+        pagingInfo: {
+          limit: options.limit || 50,
+          offset: options.offset || 0
+        }
+      };
+
+      // Add filter for related entity if specified
+      if (options.relatedToType && options.relatedToId) {
+        params.where = [
+          {
+            fieldName: 'relatedToType',
+            operator: 'ExactMatch',
+            values: [options.relatedToType]
+          },
+          {
+            fieldName: 'relatedToId',
+            operator: 'ExactMatch',
+            values: [options.relatedToId]
+          }
+        ];
+      }
+
+      // Add filter for assigned user if specified
+      if (options.assignedTo) {
+        if (!params.where) params.where = [];
+        params.where.push({
+          fieldName: 'assignedTo',
+          operator: 'ExactMatch',
+          values: [options.assignedTo]
+        });
+      }
+
+      // Add filter for status if specified
+      if (options.status) {
+        if (!params.where) params.where = [];
+        params.where.push({
+          fieldName: 'status',
+          operator: 'ExactMatch',
+          values: [options.status]
+        });
+      }
+      
+      // Add ordering if specified (default to date)
+      params.orderBy = [
+        {
+          field: options.orderBy || 'date',
+          direction: options.orderDirection || 'ASC'
+        }
+      ];
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single activity by ID
+   * @param {string} id - Activity ID
+   * @returns {Promise} Promise resolving to activity data
+   */
+  async getActivityById(id) {
+    try {
+      const response = await this.apperClient.getRecordById(this.tableName, id);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Error fetching activity with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new activity
+   * @param {Object} activityData - Activity data
+   * @returns {Promise} Promise resolving to created activity
+   */
+  async createActivity(activityData) {
+    try {
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: activityData.title || 'New Activity',
+          Tags: activityData.tags || '',
+          title: activityData.title || '',
+          type: activityData.type || 'task',
+          status: activityData.status || 'pending',
+          description: activityData.description || '',
+          date: activityData.date || new Date().toISOString().split('T')[0],
+          time: activityData.time || '',
+          duration: activityData.duration || 0,
+          location: activityData.location || '',
+          relatedToType: activityData.relatedToType || '',
+          relatedToId: activityData.relatedToId || '',
+          reminder: activityData.reminder || false,
+          reminderTime: activityData.reminderTime || '',
+          reminderUnit: activityData.reminderUnit || '',
+          assignedTo: activityData.assignedTo || ''
+        }]
+      };
+      
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      return response.success ? response.results[0].data : null;
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing activity
+   * @param {string} id - Activity ID
+   * @param {Object} activityData - Activity data to update
+   * @returns {Promise} Promise resolving to updated activity
+   */
+  async updateActivity(id, activityData) {
+    try {
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Id: id,
+          Name: activityData.title || 'Updated Activity',
+          Tags: activityData.tags || '',
+          title: activityData.title || '',
+          type: activityData.type || '',
+          status: activityData.status || '',
+          description: activityData.description || '',
+          date: activityData.date || '',
+          time: activityData.time || '',
+          duration: activityData.duration || 0,
+          location: activityData.location || '',
+          relatedToType: activityData.relatedToType || '',
+          relatedToId: activityData.relatedToId || '',
+          reminder: activityData.reminder !== undefined ? activityData.reminder : false,
+          reminderTime: activityData.reminderTime || '',
+          reminderUnit: activityData.reminderUnit || '',
+          assignedTo: activityData.assignedTo || ''
+        }]
+      };
+      
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      return response.success ? response.results[0].data : null;
+    } catch (error) {
+      console.error(`Error updating activity with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an activity
+   * @param {string} id - Activity ID to delete
+   * @returns {Promise} Promise resolving to success status
+   */
+  async deleteActivity(id) {
+    try {
+      const params = {
+        RecordIds: [id]
+      };
+      
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      return response.success;
+    } catch (error) {
+      console.error(`Error deleting activity with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get activities by related entity (contact or deal)
+   * @param {string} type - Related entity type
+   * @param {string} id - Related entity ID
+   * @returns {Promise} Promise resolving to activities data
+   */
+  async getActivitiesByRelated(type, id) {
+    return this.getActivities({ relatedToType: type, relatedToId: id });
+  }
+
+  // Legacy methods for backward compatibility
+  async getAllActivities() {
+    return this.getActivities();
+  }
+
+  async saveActivity(activity) {
+    if (activity.id) {
+      return this.updateActivity(activity.id, activity);
+    } else {
+      return this.createActivity(activity);
+    }
+  }
+}
+
+export default new ActivityService();

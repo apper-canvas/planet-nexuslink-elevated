@@ -1,5 +1,5 @@
-import DealsService from '../services/DealsService';
-import { calculatePipelineValue, calculateWeightedPipelineValue } from './dealsUtils';
+import DealService from '../services/DealService';
+import { calculatePipelineValue } from './dealsUtils';
 
 /**
  * Generates mock sales data for the dashboard based on filters
@@ -11,7 +11,7 @@ import { calculatePipelineValue, calculateWeightedPipelineValue } from './dealsU
  */
 export const generateSalesData = (timeframe, regionFilter, teamFilter, productFilter) => {
   // Get actual deals from the DealsService
-  const deals = DealsService.getAllDeals();
+  const deals = DealService.getAllDeals();
   const pipelineValue = calculatePipelineValue(deals);
   const hasDeals = deals.length > 0;
   const periods = getPeriodsByTimeframe(timeframe);
@@ -96,7 +96,7 @@ export const generateTeamData = (timeframe, regionFilter, teamFilter) => {
      regionFilter === 'asia-pacific' ? 1.1 : 0.8);
 
   // Get deal counts by owner
-  const dealsByOwner = {};
+  let dealsByOwner = {};
   if (hasDeals) {
     deals.forEach(deal => {
       dealsByOwner[deal.ownerId] = (dealsByOwner[deal.ownerId] || 0) + 1;
@@ -198,7 +198,7 @@ export const generateCustomerData = (timeframe, regionFilter, productFilter) => 
 export const calculateKpiMetrics = (data) => {
   const { sales, team, customer } = data;
   
-  // Calculate total revenue
+  // Calculate total revenue from actual deals
   const deals = DealsService.getAllDeals();
   const hasDeals = deals.length > 0;
   

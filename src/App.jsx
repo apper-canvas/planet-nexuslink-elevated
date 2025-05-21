@@ -1,17 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, createContext } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getIcon } from './utils/iconUtils';
 import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Callback from './pages/Callback';
+import ErrorPage from './pages/ErrorPage';
 import Dashboard from './components/dashboard/Dashboard';
 import NotFound from './pages/NotFound';
 import { searchDocuments, formatSearchResults } from './utils/searchUtils';
+import { setUser, clearUser } from './store/userSlice';
+import NotificationService from './services/NotificationService';
 
-const DEFAULT_USER = 'Current User';
+// Create auth context
+export const AuthContext = createContext(null);
 
 function App() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [isInitialized, setIsInitialized] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -19,8 +29,86 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // Get authentication status
+  const userState = useSelector((state) => state.user);
+  const isAuthenticated = userState?.isAuthenticated || false;
+  const currentUser = userState?.user?.firstName || 'User';
+
+  // Initialize ApperUI once when the app loads
+  useEffect(() => {
+    const { ApperClient, ApperUI } = window.ApperSDK;
+    const client = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+
+    // Initialize but don't show login yet
+    ApperUI.setup(client, {
+      target: '#authentication',
+      clientId: import.meta.env.VITE_APPER_PROJECT_ID,
+      view: 'both',
+      onSuccess: function (user) {
+        setIsInitialized(true);
+        // CRITICAL: This exact currentPath logic must be preserved in all implementations
+        // DO NOT simplify or modify this pattern as it ensures proper redirection flow
+        let currentPath = window.location.pathname + window.location.search;
+        let redirectPath = new URLSearchParams(window.location.search).get('redirect');
+        const isAuthPage = currentPath.includes('/login') || currentPath.includes('/signup') || currentPath.includes(
+          '/callback') || currentPath.includes('/error');
+        if (user) {
+          // User is authenticated
+          if (redirectPath) {
+            navigate(redirectPath);
+          } else if (!isAuthPage) {
+            if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
+              navigate(currentPath);
+            } else {
+              navigate('/dashboard');
+            }
+          } else {
+            navigate('/dashboard');
+          }
+          // Store user information in Redux
+          dispatch(setUser(JSON.parse(JSON.stringify(user))));
+        } else {
+          // User is not authenticated
+          if (!isAuthPage) {
+            navigate(
+              currentPath.includes('/signup')
+                ? `/signup?redirect=${currentPath}`
+                : currentPath.includes('/login')
+                  ? `/login?redirect=${currentPath}`
+                  : '/login');
+          } else if (redirectPath) {
+            if (
+              ![
+                'error',
+                'signup',
+                'login',
+                'callback'
+              ].some((path) => currentPath.includes(path)))
+              navigate(`/login?redirect=${redirectPath}`);
+            else {
+              navigate(currentPath);
+            }
+          } else if (isAuthPage) {
+            navigate(currentPath);
+          } else {
+            navigate('/login');
+          }
+          dispatch(clearUser());
+        }
+      },
+      onError: function(error) {
+        console.error("Authentication failed:", error);
+        toast.error("Authentication failed. Please try again.");
+      }
+    });
+  }, [dispatch, navigate]);
   
   useEffect(() => {
     // Check for user preference
@@ -50,39 +138,59 @@ function App() {
   const markNotificationAsRead = (id) => {
     setNotifications(prev => {
       const updated = prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
+        notif.id === parseInt(id) ? { ...notif, read: true } : notif
       );
-      localStorage.setItem('crm-notifications', JSON.stringify(updated));
       return updated;
     });
+
+    // Update in database
+    NotificationService.markAsRead(id)
+      .then(() => {
+        console.log('Notification marked as read');
+      })
+      .catch(error => {
+        console.error('Error marking notification as read:', error);
+        toast.error('Failed to update notification');
+      });
   };
 
   useEffect(() => {
-    // Load notifications from localStorage
-    const savedNotifications = localStorage.getItem('crm-notifications');
-    if (savedNotifications) {
-      setNotifications(JSON.parse(savedNotifications));
+    if (isAuthenticated) {
+      setIsLoadingNotifications(true);
+      NotificationService.getNotifications()
+        .then(data => {
+          setNotifications(data);
+          setIsLoadingNotifications(false);
+        })
+        .catch(error => {
+          console.error('Error fetching notifications:', error);
+          setIsLoadingNotifications(false);
+          toast.error('Failed to load notifications');
+        });
+      
+      // Set up event listener for new notifications
+      const handleNewNotification = (event) => {
+        const notification = event.detail;
+        setNotifications(prev => [notification, ...prev]);
+        toast.info(`You were mentioned in a note by ${notification.from}`);
+      };
+      
+      window.addEventListener('new-notification', handleNewNotification);
+      return () => window.removeEventListener('new-notification', handleNewNotification);
     }
-    
-    // Set up event listener for new notifications
-    const handleNewNotification = (event) => {
-      const notification = event.detail;
-      setNotifications(prev => {
-        const updated = [notification, ...prev];
-        localStorage.setItem('crm-notifications', JSON.stringify(updated));
-        return updated;
-      });
-      toast.info(`You were mentioned in a note by ${notification.from}`);
-    };
-    
-    window.addEventListener('new-notification', handleNewNotification);
-    return () => window.removeEventListener('new-notification', handleNewNotification);
-  }, []);
+    return () => {};
+  }, [isAuthenticated]);
   
   const clearAllNotifications = () => {
-    setNotifications([]);
-    localStorage.setItem('crm-notifications', JSON.stringify([]));
-    toast.success('All notifications cleared');
+    NotificationService.clearAllNotifications()
+      .then(() => {
+        setNotifications([]);
+        toast.success('All notifications cleared');
+      })
+      .catch(error => {
+        console.error('Error clearing notifications:', error);
+        toast.error('Failed to clear notifications');
+      });
   };
   
   const notificationRef = useRef(null);
@@ -159,7 +267,7 @@ function App() {
 
   const handleViewDocument = (doc) => {
     // Navigate to the contact's document tab
-    navigate(`/?contact=${doc.contactId}&tab=documents`);
+    navigate(isAuthenticated ? `/?contact=${doc.contactId}&tab=documents` : '/login');
     setShowSearch(false);
     
     // Show notification
@@ -181,7 +289,30 @@ function App() {
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Authentication methods to share via context
+  const authMethods = {
+    isInitialized,
+    logout: async () => {
+      try {
+        const { ApperUI } = window.ApperSDK;
+        await ApperUI.logout();
+        dispatch(clearUser());
+        navigate('/login');
+      } catch (error) {
+        console.error("Logout failed:", error);
+      }
+    }
+  };
+
+  if (!isInitialized && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+    return <div className="flex items-center justify-center min-h-screen bg-surface-50 dark:bg-surface-900">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <span className="ml-3 text-lg">Initializing application...</span>
+    </div>;
+  }
+
   return (
+    <AuthContext.Provider value={authMethods}>
     <div className="min-h-screen flex flex-col">
       <header className="bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -279,7 +410,7 @@ function App() {
               <SearchIcon className="w-5 h-5" />
             </button>
             
-            <div className="relative" ref={notificationRef}>
+                      <h3 className="font-medium">{isLoadingNotifications ? 'Loading...' : 'Notifications'}</h3>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Notifications"
@@ -292,6 +423,12 @@ function App() {
                 )}
               </button>
               
+                        isLoadingNotifications ? (
+                          <div className="p-4 text-center text-surface-500 dark:text-surface-400">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                            Loading notifications...
+                          </div>
+                        ) : (
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-surface-800 shadow-lg rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
                   <div className="p-3 border-b border-surface-200 dark:border-surface-700 flex justify-between items-center">
@@ -311,7 +448,7 @@ function App() {
                       <div className="p-4 text-center text-surface-500 dark:text-surface-400">
                         No notifications yet
                       </div>
-                    ) : (
+                                  {notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'Just now'}
                       notifications.map(notification => (
                         <div 
                           key={notification.id} 
@@ -340,7 +477,11 @@ function App() {
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/callback" element={<Callback />} />
+          <Route path="/error" element={<ErrorPage />} />
+          <Route path="/" element={<Home darkMode={darkMode} currentUser={currentUser} />} />
             >
               {darkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
             </button>
@@ -380,6 +521,7 @@ function App() {
         theme={darkMode ? "dark" : "light"}
       />
     </div>
+    </AuthContext.Provider>
   );
 }
 

@@ -1,302 +1,306 @@
-import { formatEmails } from '../utils/emailUtils';
+/**
+ * EmailService.js
+ * Service for managing emails using ApperClient
+ */
+
+// Fields based on the table definition
+const FIELDS = [
+  'Name',
+  'Tags',
+  'Owner',
+  'CreatedOn',
+  'CreatedBy',
+  'ModifiedOn',
+  'ModifiedBy',
+  'subject',
+  'fromName',
+  'fromEmail',
+  'toRecipients',
+  'ccRecipients',
+  'bccRecipients',
+  'body',
+  'preview',
+  'timestamp',
+  'read',
+  'folder'
+];
 
 class EmailService {
   constructor() {
-    this.storageKey = 'nexuslink-emails';
-    this.contactsKey = 'crm-contacts';
-    this.draftsKey = 'nexuslink-email-drafts';
-    this.init();
+    this.tableName = 'email';
+    this.initialize();
   }
 
-  init() {
-    // Initialize with sample data if no emails exist
-    if (!localStorage.getItem(this.storageKey)) {
-      const sampleEmails = this.generateSampleEmails();
-      localStorage.setItem(this.storageKey, JSON.stringify(sampleEmails));
-    }
-
-    // Initialize drafts if they don't exist
-    if (!localStorage.getItem(this.draftsKey)) {
-      localStorage.setItem(this.draftsKey, JSON.stringify([]));
-    }
-  }
-
-  generateSampleEmails() {
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const lastWeek = new Date(now);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-
-    return [
-      {
-        id: 'email-1',
-        subject: 'Quarterly Business Review',
-        from: {
-          name: 'Sarah Johnson',
-          email: 'sarah.j@innovatech.com'
-        },
-        to: [
-          {
-            name: 'Current User',
-            email: 'user@nexuslink.com'
-          }
-        ],
-        cc: [],
-        bcc: [],
-        body: "Hi there,\n\nI wanted to schedule our quarterly business review for next month. We've seen some great results with the implementation of your software, and I'd like to discuss expanding our usage.\n\nDo you have availability next Wednesday afternoon?\n\nBest regards,\nSarah",
-        preview: "I wanted to schedule our quarterly business review for next month...",
-        timestamp: now.toISOString(),
-        read: false,
-        folder: 'inbox',
-        attachments: []
-      },
-      {
-        id: 'email-2',
-        subject: 'Project Update: New Website Launch',
-        from: {
-          name: 'David Chen',
-          email: 'd.chen@grpartners.com'
-        },
-        to: [
-          {
-            name: 'Current User',
-            email: 'user@nexuslink.com'
-          }
-        ],
-        cc: [
-          {
-            name: 'Maria Rodriguez',
-            email: 'mrodriguez@sunshine-hosp.com'
-          }
-        ],
-        body: "Hello,\n\nI'm reaching out regarding the upcoming website launch. We're on track for our target date, but I wanted to discuss a few design changes before we go live.\n\nCould you review the attached mockups and provide feedback by Friday?\n\nThanks,\nDavid",
-        preview: "I'm reaching out regarding the upcoming website launch...",
-        timestamp: yesterday.toISOString(),
-        read: true,
-        folder: 'inbox',
-        attachments: [
-          {
-            id: 'att-1',
-            name: 'Website_Mockups_v2.pdf',
-            size: 4500000,
-            type: 'application/pdf'
-          }
-        ]
-      },
-      {
-        id: 'email-3',
-        subject: 'Service Contract Renewal',
-        from: {
-          name: 'Current User',
-          email: 'user@nexuslink.com'
-        },
-        to: [
-          {
-            name: 'Miguel Rodriguez',
-            email: 'mrodriguez@sunshine-hosp.com'
-          }
-        ],
-        cc: [],
-        bcc: [],
-        body: "Hi Miguel,\n\nI wanted to touch base about your service contract renewal. Your current agreement expires next month, and we've prepared a new proposal with some enhanced features based on your usage patterns.\n\nWould you like to schedule a call to discuss the details?\n\nBest regards,\nNexusLink Team",
-        preview: "I wanted to touch base about your service contract renewal...",
-        timestamp: lastWeek.toISOString(),
-        read: true,
-        folder: 'sent',
-        attachments: [
-          {
-            id: 'att-2',
-            name: 'Sunshine_Renewal_Proposal.docx',
-            size: 1200000,
-            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-          }
-        ]
-      }
-    ];
-  }
-
-  async getEmails(folder = 'inbox') {
-    // Simulate network delay
-    await this.delay(500);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    
-    if (folder === 'drafts') {
-      return JSON.parse(localStorage.getItem(this.draftsKey) || '[]')
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }
-    
-    return emails
-      .filter(email => email.folder === folder)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }
-
-  async getEmailById(id) {
-    await this.delay(300);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const drafts = JSON.parse(localStorage.getItem(this.draftsKey) || '[]');
-    
-    return emails.find(email => email.id === id) || 
-           drafts.find(draft => draft.id === id) ||
-           null;
-  }
-
-  async getEmailThread(emailId) {
-    await this.delay(500);
-    
-    const email = await this.getEmailById(emailId);
-    if (!email) return [];
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    
-    // For simplicity, we're just returning emails with the same subject
-    // In a real app, this would use proper threading with references/in-reply-to headers
-    return emails
-      .filter(e => 
-        e.subject.replace(/^(Re:|Fwd:)\s*/i, '').trim() === 
-        email.subject.replace(/^(Re:|Fwd:)\s*/i, '').trim()
-      )
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
-
-  async sendEmail(emailData) {
-    await this.delay(1000);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const now = new Date();
-    
-    // Format recipients
-    const formattedRecipients = emailData.to.map(email => {
-      const contact = this.findContactByEmail(email);
-      return contact ? 
-        { name: contact.name, email: contact.email } : 
-        { name: email.split('@')[0], email };
+  initialize() {
+    const { ApperClient } = window.ApperSDK;
+    this.apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
-    
-    const newEmail = {
-      id: `email-${Date.now()}`,
-      subject: emailData.subject,
-      from: {
-        name: 'Current User',
-        email: 'user@nexuslink.com'
-      },
-      to: formattedRecipients,
-      cc: emailData.cc ? emailData.cc.map(email => {
-        const contact = this.findContactByEmail(email);
-        return contact ? 
-          { name: contact.name, email: contact.email } : 
-          { name: email.split('@')[0], email };
-      }) : [],
-      bcc: emailData.bcc ? emailData.bcc.map(email => {
-        const contact = this.findContactByEmail(email);
-        return contact ? 
-          { name: contact.name, email: contact.email } : 
-          { name: email.split('@')[0], email };
-      }) : [],
-      body: emailData.body,
-      preview: emailData.body.substring(0, 100) + '...',
-      timestamp: now.toISOString(),
-      read: true,
-      folder: 'sent',
-      attachments: emailData.attachments || []
-    };
-    
-    emails.push(newEmail);
-    localStorage.setItem(this.storageKey, JSON.stringify(emails));
-    
-    return newEmail;
   }
 
+  /**
+   * Get emails with optional filtering
+   * @param {string} folder - Email folder (inbox, sent, drafts, trash, archive)
+   * @param {Object} options - Query options
+   * @returns {Promise} Promise resolving to emails data
+   */
+  async getEmails(folder = 'inbox', options = {}) {
+    try {
+      const params = {
+        fields: FIELDS,
+        pagingInfo: {
+          limit: options.limit || 50,
+          offset: options.offset || 0
+        },
+        orderBy: [
+          {
+            field: 'timestamp',
+            direction: 'DESC'
+          }
+        ],
+        where: [
+          {
+            fieldName: 'folder',
+            operator: 'ExactMatch',
+            values: [folder]
+          }
+        ]
+      };
+
+      // Add search filter if specified
+      if (options.search) {
+        params.where.push({
+          fieldName: 'subject',
+          operator: 'Contains',
+          values: [options.search]
+        });
+        // Add search in email body too
+        params.whereGroups = [
+          {
+            operator: 'OR',
+            subGroups: [
+              {
+                conditions: [
+                  {
+                    fieldName: 'subject',
+                    operator: 'Contains',
+                    values: [options.search]
+                  }
+                ]
+              },
+              {
+                conditions: [
+                  {
+                    fieldName: 'body',
+                    operator: 'Contains',
+                    values: [options.search]
+                  }
+                ]
+              }
+            ]
+          }
+        ];
+      }
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single email by ID
+   * @param {string} id - Email ID
+   * @returns {Promise} Promise resolving to email data
+   */
+  async getEmailById(id) {
+    try {
+      const response = await this.apperClient.getRecordById(this.tableName, id);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Error fetching email with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get email thread based on subject
+   * @param {string} emailId - Base email ID
+   * @returns {Promise} Promise resolving to thread emails
+   */
+  async getEmailThread(emailId) {
+    try {
+      // First get the base email
+      const email = await this.getEmailById(emailId);
+      if (!email) return [];
+      
+      // Then find related emails with similar subject
+      const subject = email.subject.replace(/^(Re:|Fwd:)\s*/i, '').trim();
+      
+      const params = {
+        fields: FIELDS,
+        where: [
+          {
+            fieldName: 'subject',
+            operator: 'Contains',
+            values: [subject]
+          }
+        ],
+        orderBy: [
+          {
+            field: 'timestamp',
+            direction: 'ASC'
+          }
+        ]
+      };
+      
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching email thread:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a new email
+   * @param {Object} emailData - Email data
+   * @returns {Promise} Promise resolving to sent email
+   */
+  async sendEmail(emailData) {
+    try {
+      const preview = emailData.body ? emailData.body.substring(0, 100) + '...' : '';
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: emailData.subject || 'No Subject',
+          Tags: emailData.tags || '',
+          subject: emailData.subject || 'No Subject',
+          fromName: emailData.fromName || 'Current User',
+          fromEmail: emailData.fromEmail || 'user@example.com',
+          toRecipients: Array.isArray(emailData.to) ? emailData.to.join(',') : emailData.to || '',
+          ccRecipients: Array.isArray(emailData.cc) ? emailData.cc.join(',') : emailData.cc || '',
+          bccRecipients: Array.isArray(emailData.bcc) ? emailData.bcc.join(',') : emailData.bcc || '',
+          body: emailData.body || '',
+          preview: preview,
+          timestamp: new Date().toISOString(),
+          read: true,
+          folder: 'sent'
+        }]
+      };
+      
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      return response.success ? response.results[0].data : null;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save email as draft
+   * @param {Object} draftData - Draft email data
+   * @returns {Promise} Promise resolving to saved draft
+   */
   async saveDraft(draftData) {
-    await this.delay(500);
-    
-    const drafts = JSON.parse(localStorage.getItem(this.draftsKey) || '[]');
-    const now = new Date();
-    
-    const newDraft = {
-      id: `draft-${Date.now()}`,
-      ...draftData,
-      preview: draftData.body ? draftData.body.substring(0, 100) + '...' : '(No content)',
-      timestamp: now.toISOString(),
-      folder: 'drafts'
-    };
-    
-    drafts.push(newDraft);
-    localStorage.setItem(this.draftsKey, JSON.stringify(drafts));
-    
-    return newDraft;
+    try {
+      const preview = draftData.body ? draftData.body.substring(0, 100) + '...' : '(No content)';
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: draftData.subject || 'Draft',
+          Tags: draftData.tags || '',
+          subject: draftData.subject || 'Draft',
+          fromName: draftData.fromName || 'Current User',
+          fromEmail: draftData.fromEmail || 'user@example.com',
+          toRecipients: Array.isArray(draftData.to) ? draftData.to.join(',') : draftData.to || '',
+          ccRecipients: Array.isArray(draftData.cc) ? draftData.cc.join(',') : draftData.cc || '',
+          bccRecipients: Array.isArray(draftData.bcc) ? draftData.bcc.join(',') : draftData.bcc || '',
+          body: draftData.body || '',
+          preview: preview,
+          timestamp: new Date().toISOString(),
+          read: true,
+          folder: 'drafts'
+        }]
+      };
+      
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      return response.success ? response.results[0].data : null;
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      throw error;
+    }
   }
 
+  /**
+   * Mark an email as read
+   * @param {string} emailId - Email ID
+   * @returns {Promise} Promise resolving to success status
+   */
   async markAsRead(emailId) {
-    await this.delay(300);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const updatedEmails = emails.map(email => 
-      email.id === emailId ? { ...email, read: true } : email
-    );
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(updatedEmails));
+    try {
+      const params = {
+        records: [{
+          Id: emailId,
+          read: true
+        }]
+      };
+      
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      return response.success;
+    } catch (error) {
+      console.error(`Error marking email ${emailId} as read:`, error);
+      throw error;
+    }
   }
 
+  /**
+   * Move an email to trash
+   * @param {string} emailId - Email ID
+   * @returns {Promise} Promise resolving to success status
+   */
   async moveToTrash(emailId) {
-    await this.delay(500);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const updatedEmails = emails.map(email => 
-      email.id === emailId ? { ...email, folder: 'trash' } : email
-    );
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(updatedEmails));
+    try {
+      const params = {
+        records: [{
+          Id: emailId,
+          folder: 'trash'
+        }]
+      };
+      
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      return response.success;
+    } catch (error) {
+      console.error(`Error moving email ${emailId} to trash:`, error);
+      throw error;
+    }
   }
 
-  async deleteEmailPermanently(emailId) {
-    await this.delay(800);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const updatedEmails = emails.filter(email => email.id !== emailId);
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(updatedEmails));
-  }
-
+  /**
+   * Archive an email
+   * @param {string} emailId - Email ID
+   * @returns {Promise} Promise resolving to success status
+   */
   async archiveEmail(emailId) {
-    await this.delay(500);
-    
-    const emails = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-    const updatedEmails = emails.map(email => 
-      email.id === emailId ? { ...email, folder: 'archive' } : email
-    );
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(updatedEmails));
-  }
-
-  async getContacts() {
-    await this.delay(300);
-    
-    const contacts = JSON.parse(localStorage.getItem(this.contactsKey) || '[]');
-    
-    return contacts.map(contact => ({
-      id: contact.id,
-      name: contact.name,
-      email: contact.email,
-      company: contact.company
-    }));
-  }
-
-  findContactByEmail(email) {
-    const contacts = JSON.parse(localStorage.getItem(this.contactsKey) || '[]');
-    return contacts.find(contact => contact.email === email);
-  }
-
-  async downloadAttachment(attachmentId) {
-    await this.delay(1000);
-    // In a real app, this would download the actual file
-    return { success: true };
-  }
-
-  delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    try {
+      const params = {
+        records: [{
+          Id: emailId,
+          folder: 'archive'
+        }]
+      };
+      
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      return response.success;
+    } catch (error) {
+      console.error(`Error archiving email ${emailId}:`, error);
+      throw error;
+    }
   }
 }
 
