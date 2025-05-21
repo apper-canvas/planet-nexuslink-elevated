@@ -353,8 +353,14 @@ function App() {
                   ) : searchResults.length > 0 ? (
                     <div>
                       {searchResults.map((result) => {
-                        // Use a default icon if result.icon is undefined
-                        const ResultIcon = getIcon(result.icon || 'file-text');
+                        // Safely get icon with error handling
+                        let ResultIcon;
+                        try {
+                          // Use a default icon if result.icon is undefined
+                          ResultIcon = getIcon(result.icon || 'file-text');
+                        } catch (error) {
+                          ResultIcon = getIcon('file-text'); // Fallback to a known icon
+                        }
                         return (
                           <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
                             <div className="flex items-center gap-3">
