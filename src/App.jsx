@@ -359,7 +359,6 @@ function App() {
                           // Check if icon property exists and is valid before using it
                           if (result.icon && typeof result.icon === 'string') {
                             ResultIcon = getIcon(result.icon);
-                          } else {
                             ResultIcon = FileIcon; // Use FileIcon as fallback
                           }
                         } catch (error) {
