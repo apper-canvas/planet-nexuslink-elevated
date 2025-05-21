@@ -130,6 +130,7 @@ const ActivitiesModule = ({ darkMode, currentUser }) => {
           onDelete={handleDeleteActivity}
           activityTypes={activityTypes}
           activityStatuses={activityStatuses}
+          typeInfo={activityTypes}
           filterType={filterType}
         />
       ) : (
