@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify';
 import { getIcon } from '../../utils/iconUtils';
 import { getFileExtension, getFileTypeIcon, getFileTypeLabel } from '../../utils/exportUtils';
@@ -169,7 +169,7 @@ const DocumentList = ({ documents = [], onView, onDelete, onDownload, contactId,
               ))}
             </select>
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              {React.createElement(getIcon('chevron-down'), { className: "w-4 h-4 text-surface-500" })}
+              <span>{React.createElement(getIcon('chevron-down'), { className: "w-4 h-4 text-surface-500" })}</span>
             </div>
           </div>
           
