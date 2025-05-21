@@ -169,7 +169,6 @@ const DealsModule = ({ darkMode, currentUser }) => {
       <div className="loader">Loading deals...</div>
     </div>;
   }
-  const closedWonDeals = deals.filter(deal => deal.stage === 'closed_won').length;
 
   return (
     <div className="deals-module h-full">
