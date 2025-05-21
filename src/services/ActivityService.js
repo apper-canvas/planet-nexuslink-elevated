@@ -243,7 +243,8 @@ class ActivityService {
   }
 }
 
-export default new ActivityService();
+// Create a singleton instance
+const activityService = new ActivityService();
 
 // Export individual methods for direct imports
 export const getActivities = activityService.getActivities.bind(activityService);
@@ -255,5 +256,5 @@ export const getActivitiesByRelated = activityService.getActivitiesByRelated.bin
 export const getAllActivities = activityService.getAllActivities.bind(activityService);
 export const saveActivity = activityService.saveActivity.bind(activityService);
 
-// Export the service instance as default
+// Export the service instance
 export default activityService;
