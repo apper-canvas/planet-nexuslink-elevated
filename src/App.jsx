@@ -356,13 +356,14 @@ function App() {
                         // Safely get icon with error handling
                         let ResultIcon;
                         try {
-                          // Use a default icon if result.icon is undefined or invalid
-                          const iconName = result.icon && typeof result.icon === 'string' ? result.icon : 'file-text';
-                          ResultIcon = getIcon(iconName);
+                          // Check if icon property exists and is valid before using it
+                          if (result.icon && typeof result.icon === 'string') {
+                            ResultIcon = getIcon(result.icon);
+                          } else {
+                            ResultIcon = FileIcon; // Use FileIcon as fallback
+                          }
                         } catch (error) {
-                          console.error("Error loading icon:", error);
-                          // Fallback to a known icon
-                          ResultIcon = FileIcon;
+                          console.error("Error loading icon:", error, "Using default icon instead");
                         }
                         return (
                           <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
