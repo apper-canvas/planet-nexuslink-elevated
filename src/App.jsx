@@ -358,11 +358,14 @@ function App() {
                         try {
                           // Check if icon property exists and is valid before using it
                           if (result.icon && typeof result.icon === 'string') {
-                            ResultIcon = getIcon(result.icon);
-                            ResultIcon = FileIcon; // Use FileIcon as fallback
+                            ResultIcon = getIcon(result.icon); 
+                          } else {
+                            ResultIcon = FileIcon; // Use FileIcon if icon not provided
                           }
                         } catch (error) {
                           console.error("Error loading icon:", error, "Using default icon instead");
+                          ResultIcon = FileIcon; // Use FileIcon as fallback
+                          }
                         }
                         return (
                           <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
