@@ -67,10 +67,10 @@ function App() {
             if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
               navigate(currentPath);
             } else {
-              navigate('/dashboard');
+              navigate('/');
             }
           } else {
-            navigate('/dashboard');
+            navigate('/');
           }
           // Store user information in Redux
           dispatch(setUser(JSON.parse(JSON.stringify(user))));
@@ -356,12 +356,13 @@ function App() {
                         // Safely get icon with error handling
                         let ResultIcon;
                         try {
-                          // Use a default icon if result.icon is undefined
-                          ResultIcon = result.icon ? getIcon(result.icon) : getIcon('file-text');
+                          // Use a default icon if result.icon is undefined or invalid
+                          const iconName = result.icon && typeof result.icon === 'string' ? result.icon : 'file-text';
+                          ResultIcon = getIcon(iconName);
                         } catch (error) {
                           console.error("Error loading icon:", error);
                           // Fallback to a known icon
-                          ResultIcon = getIcon('file-text');
+                          ResultIcon = FileIcon;
                         }
                         return (
                           <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
