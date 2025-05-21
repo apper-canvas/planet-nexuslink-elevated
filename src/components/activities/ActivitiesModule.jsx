@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../../utils/iconUtils';
+import { getActivityTypes, getActivityStatuses } from '../../utils/activityUtils';
 import { format } from 'date-fns';
 import ActivityList from './ActivityList';
 import ActivityCalendar from './ActivityCalendar';
@@ -17,6 +18,10 @@ const ActivitiesModule = ({ darkMode, currentUser }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
+
+  // Activity type and status information
+  const activityTypes = getActivityTypes();
+  const activityStatuses = getActivityStatuses();
 
   // Icons
   const ListIcon = getIcon('list');
@@ -120,9 +125,12 @@ const ActivitiesModule = ({ darkMode, currentUser }) => {
       {view === 'list' ? (
         <ActivityList 
           activities={activities} 
-          loading={loading} 
-          onEdit={handleEditActivity} 
-          onDelete={handleDeleteActivity} 
+          loading={loading}
+          onEdit={handleEditActivity}
+          onDelete={handleDeleteActivity}
+          activityTypes={activityTypes}
+          activityStatuses={activityStatuses}
+          filterType={filterType}
         />
       ) : (
         <ActivityCalendar activities={activities} loading={loading} onSelectActivity={handleEditActivity} />
