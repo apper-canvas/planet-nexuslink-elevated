@@ -244,3 +244,16 @@ class ActivityService {
 }
 
 export default new ActivityService();
+
+// Export individual methods for direct imports
+export const getActivities = activityService.getActivities.bind(activityService);
+export const getActivityById = activityService.getActivityById.bind(activityService);
+export const createActivity = activityService.createActivity.bind(activityService);
+export const updateActivity = activityService.updateActivity.bind(activityService);
+export const deleteActivity = activityService.deleteActivity.bind(activityService);
+export const getActivitiesByRelated = activityService.getActivitiesByRelated.bind(activityService);
+export const getAllActivities = activityService.getAllActivities.bind(activityService);
+export const saveActivity = activityService.saveActivity.bind(activityService);
+
+// Export the service instance as default
+export default activityService;
