@@ -360,7 +360,8 @@ function App() {
                           ResultIcon = result.icon ? getIcon(result.icon) : getIcon('file-text');
                         } catch (error) {
                           console.error("Error loading icon:", error);
-                          ResultIcon = getIcon('file-text'); // Fallback to a known icon                        }
+                          // Fallback to a known icon
+                          ResultIcon = getIcon('file-text');
                         }
                         return (
                           <div key={result.id} className="p-3 border-b border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700">
