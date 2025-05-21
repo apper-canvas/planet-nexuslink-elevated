@@ -24,6 +24,10 @@ const ActivitiesModule = ({ darkMode, currentUser }) => {
   const activityStatuses = getActivityStatuses();
 
   // Icons
+  // Define TypeInfo for mapping activity types to their details 
+  const TypeInfo = {
+    getIcon: (type) => getActivityTypes().find(t => t.value === type)?.label || type
+  };
   const ListIcon = getIcon('list');
   const CalendarIcon = getIcon('calendar');
   const PlusIcon = getIcon('plus');
