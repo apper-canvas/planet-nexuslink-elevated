@@ -5,13 +5,15 @@ import { getIcon } from '../../utils/iconUtils';
 import DealList from './DealList';
 import DealForm from './DealForm';
 import DealPipeline from './DealPipeline';
-import DealsService from '../../services/DealsService';
+import DealService from '../../services/DealService';
 import { formatCurrency, calculatePipelineValue, calculateWeightedPipelineValue } from '../../utils/dealsUtils';
 
 const DealsModule = ({ darkMode, currentUser }) => {
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' or 'list'
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentDeal, setCurrentDeal] = useState(null);
   const [selectedDeal, setSelectedDeal] = useState(null);
@@ -33,19 +35,37 @@ const DealsModule = ({ darkMode, currentUser }) => {
 
   // Load deals and contacts on mount
   useEffect(() => {
-    loadDeals();
+    const fetchData = async () => {
+      await loadDeals();
+    };
+    
+    fetchData();
     
     // Load contacts from localStorage
     const storedContacts = localStorage.getItem('crm-contacts');
     if (storedContacts) {
-      setContacts(JSON.parse(storedContacts));
+      try {
+        setContacts(JSON.parse(storedContacts));
+      } catch (error) {
+        console.error('Error parsing contacts from localStorage:', error);
+        setContacts([]);
+      }
     }
   }, []);
 
   // Load deals from the service
-  const loadDeals = () => {
-    const allDeals = DealsService.getAllDeals();
-    setDeals(allDeals);
+  const loadDeals = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const allDeals = await DealService.getAllDeals();
+      setDeals(allDeals);
+    } catch (err) {
+      setError(err.message || 'An error occurred while loading deals');
+      toast.error('Failed to load deals');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle creating a new deal
@@ -67,25 +87,39 @@ const DealsModule = ({ darkMode, currentUser }) => {
   };
 
   // Handle form submission
-  const handleSubmitDeal = (dealData) => {
-    if (currentDeal) {
-      // Update existing deal
-      DealsService.updateDeal(currentDeal.id, dealData);
-      toast.success('Deal updated successfully');
-    } else {
-      // Create new deal
-      DealsService.addDeal(dealData);
-      toast.success('Deal created successfully');
+  const handleSubmitDeal = async (dealData) => {
+    setIsLoading(true);
+    try {
+      if (currentDeal) {
+        // Update existing deal
+        await DealService.updateDeal(currentDeal.id, dealData);
+        toast.success('Deal updated successfully');
+      } else {
+        // Create new deal
+        await DealService.createDeal(dealData);
+        toast.success('Deal created successfully');
+      }
+      
+      await loadDeals();
+      setIsFormOpen(false);
+    } catch (err) {
+      toast.error(err.message || 'An error occurred while saving the deal');
+    } finally {
+      setIsLoading(false);
     }
-    
-    loadDeals();
-    setIsFormOpen(false);
   };
 
   // Handle updating deal stage (for pipeline drag & drop)
-  const handleUpdateDealStage = (dealId, newStage) => {
-    DealsService.updateDeal(dealId, { stage: newStage });
-    loadDeals();
+  const handleUpdateDealStage = async (dealId, newStage) => {
+    setIsLoading(true);
+    try {
+      await DealService.updateDeal(dealId, { stage: newStage });
+      await loadDeals();
+    } catch (err) {
+      toast.error(err.message || 'An error occurred while updating deal stage');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle deleting a deal
@@ -95,13 +129,20 @@ const DealsModule = ({ darkMode, currentUser }) => {
   };
 
   // Confirm and execute deal deletion
-  const confirmDeleteDeal = () => {
+  const confirmDeleteDeal = async () => {
     if (selectedDeal) {
-      DealsService.deleteDeal(selectedDeal.id);
-      toast.success('Deal deleted successfully');
-      loadDeals();
-      setIsConfirmDeleteOpen(false);
-      setIsViewingDeal(false);
+      setIsLoading(true);
+      try {
+        await DealService.deleteDeal(selectedDeal.id);
+        toast.success('Deal deleted successfully');
+        await loadDeals();
+        setIsConfirmDeleteOpen(false);
+        setIsViewingDeal(false);
+      } catch (err) {
+        toast.error(err.message || 'An error occurred while deleting the deal');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -111,9 +152,23 @@ const DealsModule = ({ darkMode, currentUser }) => {
   };
 
   // Calculate totals
-  const pipelineValue = calculatePipelineValue(deals);
-  const weightedValue = calculateWeightedPipelineValue(deals);
-  const openDeals = deals.filter(deal => !['closed_won', 'closed_lost'].includes(deal.stage)).length;
+  let pipelineValue = 0;
+  let weightedValue = 0; 
+  let openDeals = 0;
+  let closedWonDeals = 0;
+
+  if (Array.isArray(deals)) {
+    pipelineValue = calculatePipelineValue(deals);
+    weightedValue = calculateWeightedPipelineValue(deals);
+    openDeals = deals.filter(deal => !['closed_won', 'closed_lost'].includes(deal.stage)).length;
+    closedWonDeals = deals.filter(deal => deal.stage === 'closed_won').length;
+  }
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full">
+      <div className="loader">Loading deals...</div>
+    </div>;
+  }
   const closedWonDeals = deals.filter(deal => deal.stage === 'closed_won').length;
 
   return (
@@ -172,9 +227,15 @@ const DealsModule = ({ darkMode, currentUser }) => {
       
       {/* Main content area */}
       <div className="card h-[calc(100%-120px)] overflow-auto">
-        {viewMode === 'pipeline' ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center h-full text-red-500 p-6">
+            <span className="text-xl font-bold mb-2">Error loading deals</span>
+            <p>{error}</p>
+            <button onClick={loadDeals} className="btn-primary mt-4">Retry</button>
+          </div>
+        ) : viewMode === 'pipeline' ? (
           <DealPipeline 
-            deals={deals} 
+            deals={deals || []} 
             onUpdateDealStage={handleUpdateDealStage}
             onViewDeal={handleViewDeal}
             onEditDeal={handleEditDeal}
@@ -182,7 +243,7 @@ const DealsModule = ({ darkMode, currentUser }) => {
           />
         ) : (
           <DealList 
-            deals={deals}
+            deals={deals || []}
             onViewDeal={handleViewDeal}
             onEditDeal={handleEditDeal}
             onDeleteDeal={handleDeleteDeal}
@@ -352,14 +413,14 @@ const DealsModule = ({ darkMode, currentUser }) => {
                           </div>
                         </div>
                         
-                        {selectedDeal.tags && selectedDeal.tags.length > 0 && (
+                        {selectedDeal.tags && (Array.isArray(selectedDeal.tags) ? selectedDeal.tags.length > 0 : selectedDeal.tags) && (
                           <div className="flex gap-3 items-start">
                             <TagIcon className="w-5 h-5 text-surface-400 mt-0.5" />
                             <div>
                               <div className="text-sm text-surface-500">Tags</div>
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {selectedDeal.tags.map(tag => (
-                                  <span key={tag} className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                                {(Array.isArray(selectedDeal.tags) ? selectedDeal.tags : selectedDeal.tags.split(',').filter(tag => tag.trim())).map((tag, index) => (
+                                  <span key={index} className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
                                     {tag}
                                   </span>
                                 ))}
