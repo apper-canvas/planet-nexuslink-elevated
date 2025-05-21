@@ -65,6 +65,11 @@ export const getStageBorderClass = (stageId) => {
  * @returns {number} Total pipeline value
  */
 export const calculatePipelineValue = (deals) => {
+  // Check if deals is an array, if not return 0
+  if (!Array.isArray(deals)) {
+    return 0;
+  }
+  
   return deals.reduce((total, deal) => {
     // Don't include closed lost deals in pipeline value
     if (deal.stage !== 'closed_lost') {
@@ -80,6 +85,11 @@ export const calculatePipelineValue = (deals) => {
  * @returns {number} Weighted pipeline value
  */
 export const calculateWeightedPipelineValue = (deals) => {
+  // Check if deals is an array, if not return 0
+  if (!Array.isArray(deals)) {
+    return 0;
+  }
+  
   return deals.reduce((total, deal) => {
     // Don't include closed lost deals in pipeline value
     if (deal.stage !== 'closed_lost') {
